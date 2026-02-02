@@ -1,9 +1,11 @@
-name = "moajim"
+name = "moajim-api"
 main = "worker/index.ts"
 compatibility_date = "2025-09-27"
 
-# Pages 빌드 출력 디렉토리
-pages_build_output_dir = "dist"
+# moajim.com/api 라우트 설정
+routes = [
+  { pattern = "moajim.com/api/*", zone_name = "moajim.com" }
+]
 
 [observability]
 enabled = true
