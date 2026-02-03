@@ -19,9 +19,7 @@ export default function HomePage({ navigateTo }: HomePageProps) {
               <span className="text-[#F15F5F]">쉬워집니다</span>
             </h1>
             <p className="text-[22px] text-gray-600 mb-14 leading-relaxed max-w-2xl">
-              복잡한 포트폴리오 분석과 세금 계산을
-              <br />
-              단 몇 번의 클릭으로 해결하세요
+              포트폴리오 분석, 쉽고 빠르게
             </p>
             <div className="flex flex-wrap gap-4">
               <button
