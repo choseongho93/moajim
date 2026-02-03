@@ -36,18 +36,18 @@ function CalculatorList() {
   }
 
   return (
-    <div className="min-h-screen bg-white py-12 px-6">
+    <div className="min-h-screen bg-white py-8 sm:py-12 px-4 sm:px-6">
       <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-12">
-          <h1 className="text-[42px] font-bold text-gray-900 mb-3">
+        <div className="text-center mb-8 sm:mb-12">
+          <h1 className="text-2xl sm:text-3xl md:text-[42px] font-bold text-gray-900 mb-2 sm:mb-3">
             세금 계산기
           </h1>
-          <p className="text-[17px] text-gray-600">
+          <p className="text-sm sm:text-base md:text-[17px] text-gray-600">
             필요한 세금을 쉽고 빠르게 계산하세요
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           <button
             onClick={() => navigateTo('gift-tax')}
             className="group text-left p-6 bg-white rounded-2xl border-2 border-gray-200 hover:border-[#F15F5F] transition-all hover:shadow-lg"
@@ -167,13 +167,13 @@ function GiftTaxCalculator() {
   }
 
   return (
-    <div className="min-h-screen bg-white py-12 px-6">
+    <div className="min-h-screen bg-white py-6 sm:py-12 px-4 sm:px-6">
       <div className="max-w-4xl mx-auto">
         <button
           onClick={() => {
             window.location.href = '/?view=calculator'
           }}
-          className="flex items-center gap-2 text-gray-500 hover:text-gray-900 mb-6 transition-colors text-sm"
+          className="flex items-center gap-2 text-gray-500 hover:text-gray-900 mb-4 sm:mb-6 transition-colors text-sm"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -181,15 +181,15 @@ function GiftTaxCalculator() {
           세금 계산기 목록
         </button>
 
-        <div className="flex items-center gap-3 mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">증여세 계산</h1>
+        <div className="flex items-center gap-3 mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">증여세 계산</h1>
         </div>
 
         {/* 탭 */}
-        <div className="flex gap-2 mb-8 border-b border-gray-200">
+        <div className="flex gap-1 sm:gap-2 mb-6 sm:mb-8 border-b border-gray-200 overflow-x-auto">
           <button
             onClick={() => setActiveTab('explanation')}
-            className={`px-4 py-3 font-medium transition-colors ${
+            className={`px-3 sm:px-4 py-2 sm:py-3 font-medium transition-colors whitespace-nowrap text-sm sm:text-base ${
               activeTab === 'explanation'
                 ? 'text-[#F15F5F] border-b-2 border-[#F15F5F]'
                 : 'text-gray-500 hover:text-gray-700'
@@ -199,7 +199,7 @@ function GiftTaxCalculator() {
           </button>
           <button
             onClick={() => setActiveTab('gift')}
-            className={`px-4 py-3 font-medium transition-colors ${
+            className={`px-3 sm:px-4 py-2 sm:py-3 font-medium transition-colors whitespace-nowrap text-sm sm:text-base ${
               activeTab === 'gift'
                 ? 'text-[#F15F5F] border-b-2 border-[#F15F5F]'
                 : 'text-gray-500 hover:text-gray-700'
@@ -209,7 +209,7 @@ function GiftTaxCalculator() {
           </button>
           <button
             onClick={() => setActiveTab('burden')}
-            className={`px-4 py-3 font-medium transition-colors ${
+            className={`px-3 sm:px-4 py-2 sm:py-3 font-medium transition-colors whitespace-nowrap text-sm sm:text-base ${
               activeTab === 'burden'
                 ? 'text-[#F15F5F] border-b-2 border-[#F15F5F]'
                 : 'text-gray-500 hover:text-gray-700'
@@ -219,7 +219,7 @@ function GiftTaxCalculator() {
           </button>
           <button
             onClick={() => setActiveTab('acquisition')}
-            className={`px-4 py-3 font-medium transition-colors ${
+            className={`px-3 sm:px-4 py-2 sm:py-3 font-medium transition-colors whitespace-nowrap text-sm sm:text-base ${
               activeTab === 'acquisition'
                 ? 'text-[#F15F5F] border-b-2 border-[#F15F5F]'
                 : 'text-gray-500 hover:text-gray-700'
@@ -600,13 +600,13 @@ function InheritanceTaxCalculator() {
   const [pastGiftAmount, setPastGiftAmount] = useState<number>(0)
 
   return (
-    <div className="min-h-screen bg-white py-12 px-6">
+    <div className="min-h-screen bg-white py-6 sm:py-12 px-4 sm:px-6">
       <div className="max-w-4xl mx-auto">
         <button
           onClick={() => {
             window.location.href = '/?view=calculator'
           }}
-          className="flex items-center gap-2 text-gray-500 hover:text-gray-900 mb-6 transition-colors text-sm"
+          className="flex items-center gap-2 text-gray-500 hover:text-gray-900 mb-4 sm:mb-6 transition-colors text-sm"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -614,15 +614,15 @@ function InheritanceTaxCalculator() {
           세금 계산기 목록
         </button>
 
-        <div className="flex items-center gap-3 mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">상속세 계산</h1>
+        <div className="flex items-center gap-3 mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">상속세 계산</h1>
         </div>
 
         {/* 탭 */}
-        <div className="flex gap-2 mb-8 border-b border-gray-200">
+        <div className="flex gap-1 sm:gap-2 mb-6 sm:mb-8 border-b border-gray-200 overflow-x-auto">
           <button
             onClick={() => setActiveTab('explanation')}
-            className={`px-4 py-3 font-medium transition-colors ${
+            className={`px-3 sm:px-4 py-2 sm:py-3 font-medium transition-colors whitespace-nowrap text-sm sm:text-base ${
               activeTab === 'explanation'
                 ? 'text-[#F15F5F] border-b-2 border-[#F15F5F]'
                 : 'text-gray-500 hover:text-gray-700'
@@ -632,7 +632,7 @@ function InheritanceTaxCalculator() {
           </button>
           <button
             onClick={() => setActiveTab('spouse')}
-            className={`px-4 py-3 font-medium transition-colors ${
+            className={`px-3 sm:px-4 py-2 sm:py-3 font-medium transition-colors whitespace-nowrap text-sm sm:text-base ${
               activeTab === 'spouse'
                 ? 'text-[#F15F5F] border-b-2 border-[#F15F5F]'
                 : 'text-gray-500 hover:text-gray-700'
@@ -642,7 +642,7 @@ function InheritanceTaxCalculator() {
           </button>
           <button
             onClick={() => setActiveTab('deduction')}
-            className={`px-4 py-3 font-medium transition-colors ${
+            className={`px-3 sm:px-4 py-2 sm:py-3 font-medium transition-colors whitespace-nowrap text-sm sm:text-base ${
               activeTab === 'deduction'
                 ? 'text-[#F15F5F] border-b-2 border-[#F15F5F]'
                 : 'text-gray-500 hover:text-gray-700'
