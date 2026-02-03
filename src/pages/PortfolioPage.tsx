@@ -4,8 +4,18 @@ import { fetchInvestors, analyzePortfolio } from '../api/portfolio'
 import { formatKoreanAmount } from '../utils/currency'
 import { getCryptoPrices, CRYPTO_LIST } from '../api/prices'
 
-export default function PortfolioPage() {
-  const [step, setStep] = useState<'select-investor' | 'input-assets' | 'results'>('select-investor')
+interface PortfolioPageProps {
+  initialSubView?: string
+}
+
+export default function PortfolioPage({ initialSubView }: PortfolioPageProps) {
+  // initialSubView가 quiz면 quiz, 아니면 select-investor
+  const getInitialStep = () => {
+    if (initialSubView === 'quiz') return 'quiz'
+    return 'select-investor'
+  }
+
+  const [step, setStep] = useState<'quiz' | 'select-investor' | 'input-assets' | 'results'>(getInitialStep())
   const [investors, setInvestors] = useState<Investor[]>([])
   const [selectedInvestor, setSelectedInvestor] = useState<Investor | null>(null)
   const [detailedAssets, setDetailedAssets] = useState<DetailedAssets>({
@@ -64,6 +74,10 @@ export default function PortfolioPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  if (step === 'quiz') {
+    return <QuizView investors={investors} onComplete={handleInvestorSelect} />
   }
 
   if (step === 'select-investor') {
@@ -577,6 +591,162 @@ function ResultsView({
             새로운 분석
           </button>
         </div>
+      </div>
+    </div>
+  )
+}
+
+// 투자 성향 퀴즈 화면
+function QuizView({
+  investors,
+  onComplete,
+}: {
+  investors: Investor[]
+  onComplete: (investor: Investor) => void
+}) {
+  const [currentQuestion, setCurrentQuestion] = useState(0)
+  const [answers, setAnswers] = useState<number[]>([])
+
+  const questions = [
+    {
+      question: '투자 손실을 얼마나 감수할 수 있나요?',
+      icon: '📉',
+      options: [
+        { text: '5-10% 손실도 부담스럽다', score: [2, 0, 1, 3, 2] },
+        { text: '20-30% 손실은 감수 가능', score: [3, 2, 3, 1, 1] },
+        { text: '50% 이상 손실도 괜찮다', score: [1, 3, 2, 0, 0] },
+      ],
+    },
+    {
+      question: '투자 목표는 무엇인가요?',
+      icon: '🎯',
+      options: [
+        { text: '안정적인 수익', score: [2, 0, 2, 3, 3] },
+        { text: '균형 잡힌 성장', score: [3, 1, 3, 2, 2] },
+        { text: '높은 수익률', score: [2, 3, 1, 0, 0] },
+      ],
+    },
+    {
+      question: '투자 기간은 어느 정도 생각하시나요?',
+      icon: '⏰',
+      options: [
+        { text: '5년 이하 단기', score: [0, 2, 1, 1, 2] },
+        { text: '5-10년 중기', score: [2, 2, 2, 2, 2] },
+        { text: '10년 이상 장기', score: [3, 1, 2, 3, 2] },
+      ],
+    },
+    {
+      question: '선호하는 투자 스타일은?',
+      icon: '💼',
+      options: [
+        { text: '시장 전체를 따라가는 인덱스', score: [1, 0, 2, 3, 1] },
+        { text: '저평가된 우량 기업 발굴', score: [3, 1, 1, 1, 3] },
+        { text: '성장 가능성 높은 기업', score: [1, 3, 1, 0, 0] },
+        { text: '다양한 자산에 분산 투자', score: [1, 0, 3, 2, 1] },
+      ],
+    },
+  ]
+
+  const handleAnswer = (optionIndex: number) => {
+    const newAnswers = [...answers, optionIndex]
+    setAnswers(newAnswers)
+
+    if (currentQuestion < questions.length - 1) {
+      setCurrentQuestion(currentQuestion + 1)
+    } else {
+      // 퀴즈 완료 - 점수 계산
+      const scores = [0, 0, 0, 0, 0]
+      questions.forEach((q, qIndex) => {
+        const answerIndex = newAnswers[qIndex]
+        const optionScores = q.options[answerIndex].score
+        optionScores.forEach((s, i) => {
+          scores[i] += s
+        })
+      })
+
+      const maxScore = Math.max(...scores)
+      const recommendedIndex = scores.indexOf(maxScore)
+      const investorIds = ['warren-buffett', 'peter-lynch', 'ray-dalio', 'john-bogle', 'benjamin-graham']
+      const recommendedInvestor = investors.find(inv => inv.id === investorIds[recommendedIndex])
+
+      if (recommendedInvestor) {
+        onComplete(recommendedInvestor)
+      } else if (investors.length > 0) {
+        onComplete(investors[0])
+      }
+    }
+  }
+
+  const progress = ((currentQuestion + 1) / questions.length) * 100
+
+  return (
+    <div className="min-h-screen bg-white py-12 px-6">
+      <div className="max-w-2xl mx-auto">
+        <div className="text-center mb-12">
+          <h1 className="text-[42px] font-bold text-gray-900 mb-3">
+            나와 맞는 투자 스타일 찾기
+          </h1>
+          <p className="text-[17px] text-gray-600">
+            간단한 질문으로 투자 성향을 파악해드려요
+          </p>
+        </div>
+
+        {/* 진행률 바 */}
+        <div className="mb-8">
+          <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-[#F15F5F] to-[#FFA7A7] transition-all duration-500"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+          <p className="text-sm text-gray-500 mt-2 text-center">
+            {currentQuestion + 1} / {questions.length}
+          </p>
+        </div>
+
+        {/* 질문 카드 */}
+        <div className="bg-white rounded-3xl border-2 border-gray-100 p-8 shadow-lg">
+          <div className="text-center mb-8">
+            <div className="text-6xl mb-4">{questions[currentQuestion].icon}</div>
+            <h2 className="text-2xl font-bold text-gray-900">
+              {questions[currentQuestion].question}
+            </h2>
+          </div>
+
+          <div className="space-y-3">
+            {questions[currentQuestion].options.map((option, index) => (
+              <button
+                key={index}
+                onClick={() => handleAnswer(index)}
+                className="w-full p-5 text-left rounded-xl border-2 border-gray-200 hover:border-[#F15F5F] hover:bg-red-50 transition-all group"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-base font-medium text-gray-900 group-hover:text-[#F15F5F]">
+                    {option.text}
+                  </span>
+                  <svg className="w-5 h-5 text-gray-300 group-hover:text-[#F15F5F]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* 뒤로가기 */}
+        {currentQuestion > 0 && (
+          <div className="text-center mt-6">
+            <button
+              onClick={() => {
+                setCurrentQuestion(currentQuestion - 1)
+                setAnswers(answers.slice(0, -1))
+              }}
+              className="text-sm text-gray-500 hover:text-gray-900 transition-colors"
+            >
+              ← 이전 질문
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )
