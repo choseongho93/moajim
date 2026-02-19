@@ -77,12 +77,6 @@ export default function Navigation({ activeView, onNavigate }: NavigationProps) 
               {showPortfolioMenu && (
                 <div className="absolute top-full left-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50">
                   <button
-                    onClick={() => handleNavigation('portfolio', 'quiz')}
-                    className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-red-50 hover:text-[#F15F5F] transition-colors"
-                  >
-                    투자자 스타일 찾기
-                  </button>
-                  <button
                     onClick={() => handleNavigation('portfolio', 'analysis')}
                     className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-red-50 hover:text-[#F15F5F] transition-colors"
                   >
@@ -178,12 +172,6 @@ export default function Navigation({ activeView, onNavigate }: NavigationProps) 
                 포트폴리오
               </button>
               <div className="pl-4 space-y-1">
-                <button
-                  onClick={() => handleNavigation('portfolio', 'quiz')}
-                  className="w-full text-left px-4 py-2 text-sm text-gray-600 hover:bg-red-50 hover:text-[#F15F5F] rounded-lg transition-colors"
-                >
-                  투자자 스타일 찾기
-                </button>
                 <button
                   onClick={() => handleNavigation('portfolio', 'analysis')}
                   className="w-full text-left px-4 py-2 text-sm text-gray-600 hover:bg-red-50 hover:text-[#F15F5F] rounded-lg transition-colors"

@@ -14,6 +14,10 @@ function App() {
     const params = new URLSearchParams(window.location.search)
     const view = params.get('view')
     const sub = params.get('sub')
+
+    // 브라우저 뒤로가기/앞으로가기 시에도 스크롤 상단으로
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+
     if (view === 'portfolio' || view === 'calculator') {
       setActiveView(view)
       setSubView(sub || '')
@@ -42,6 +46,10 @@ function App() {
   const navigateTo = (view: 'home' | 'portfolio' | 'calculator', sub?: string) => {
     setActiveView(view)
     setSubView(sub || '')
+
+    // 페이지 이동 시 스크롤 상단으로 이동
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+
     if (view === 'home') {
       window.history.pushState({}, '', '/')
     } else if (sub) {
