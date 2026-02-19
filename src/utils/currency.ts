@@ -1,49 +1,31 @@
 /**
- * 만원을 한국어로 변환하는 함수
+ * 만원을 간결한 형식으로 변환하는 함수
  * @param manwon 만원 단위 금액
- * @returns 한국어 표시 (예: "1억 5천만원")
+ * @returns 간결한 표시 (예: "4,000만원" 또는 "1.5억원")
  */
 export function formatKoreanAmount(manwon: number): string {
   if (manwon === 0) return '0원'
 
   const eok = Math.floor(manwon / 10000)
-  const man = manwon % 10000
-  const cheon = Math.floor(man / 1000)
-  const baek = Math.floor((man % 1000) / 100)
-  const sip = Math.floor((man % 100) / 10)
-  const il = man % 10
+  const remainder = manwon % 10000
 
-  let result = ''
-
+  // 1억 이상
   if (eok > 0) {
-    if (eok === 1) result += '1억'
-    else result += `${eok}억`
+    if (remainder === 0) {
+      // 정확히 억 단위 (예: 1억, 2억)
+      return `${eok.toLocaleString()}억원`
+    } else if (remainder >= 1000) {
+      // 억 + 천만 이상 (예: 1.5억, 2.3억)
+      const decimal = Math.round((remainder / 10000) * 10) / 10
+      return `${eok.toLocaleString()}.${Math.round(decimal * 10)}억원`
+    } else {
+      // 억 + 천만 미만 (예: 1억 500만원)
+      return `${eok.toLocaleString()}억 ${remainder.toLocaleString()}만원`
+    }
   }
 
-  if (cheon > 0) {
-    if (result) result += ' '
-    if (cheon === 1) result += '1천만'
-    else result += `${cheon}천만`
-  }
-
-  if (baek > 0) {
-    if (result) result += ' '
-    if (baek === 1) result += '1백만'
-    else result += `${baek}백만`
-  }
-
-  if (sip > 0) {
-    if (result) result += ' '
-    if (sip === 1) result += '10만'
-    else result += `${sip * 10}만`
-  }
-
-  if (il > 0 || (!eok && !cheon && !baek && !sip)) {
-    if (result) result += ' '
-    if (il > 0) result += `${il}만`
-  }
-
-  return result + '원'
+  // 1억 미만 - 천 단위 구분 쉼표로 표시
+  return `${manwon.toLocaleString()}만원`
 }
 
 /**
