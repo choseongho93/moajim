@@ -22,6 +22,7 @@ interface ApartmentTrade {
   dealDay: string
   buildYear: string
   jibun: string // 지번
+  umdNm: string // 법정동명
 }
 
 /**
@@ -44,8 +45,6 @@ export async function fetchApartmentTrades(params: RealEstateParams): Promise<Ap
   url.searchParams.set('serviceKey', API_KEY)
   url.searchParams.set('pageNo', '1')
   url.searchParams.set('numOfRows', '999') // 최대한 많이 가져오기
-
-  console.log('API call:', url.toString())
 
   const response = await fetch(url.toString())
   const text = await response.text()
@@ -84,6 +83,7 @@ function parseXmlItems(xml: string): ApartmentTrade[] {
       dealDay: extractTag(itemXml, 'dealDay'),
       buildYear: extractTag(itemXml, 'buildYear'),
       jibun: extractTag(itemXml, 'jibun'),
+      umdNm: extractTag(itemXml, 'umdNm'),
     }
 
     items.push(item)

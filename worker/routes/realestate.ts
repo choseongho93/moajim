@@ -17,9 +17,9 @@ export async function handleSearchRealEstate(request: Request): Promise<Response
     const body = await request.json() as SearchRequest
 
     // 유효성 검사
-    if (!body.lawdCd || !body.aptName) {
+    if (!body.lawdCd) {
       return new Response(
-        JSON.stringify({ error: 'lawdCd와 aptName은 필수입니다' }),
+        JSON.stringify({ error: 'lawdCd는 필수입니다' }),
         {
           status: 400,
           headers: CORS_HEADERS,
@@ -27,13 +27,13 @@ export async function handleSearchRealEstate(request: Request): Promise<Response
       )
     }
 
-    // 기본값: 현재 월과 이전 2개월
-    const dealYmds = body.dealYmd ? [body.dealYmd] : getRecentMonths(3)
+    // 기본값: 최근 5년 (60개월)
+    const dealYmds = body.dealYmd ? [body.dealYmd] : getRecentMonths(60)
 
     let bestMatch = null
     let allTrades: any[] = []
 
-    // 최근 3개월 데이터 조회
+    // 최근 5년 데이터 조회
     for (const ym of dealYmds) {
       try {
         const trades = await fetchApartmentTrades({
@@ -43,17 +43,20 @@ export async function handleSearchRealEstate(request: Request): Promise<Response
 
         allTrades = allTrades.concat(trades)
 
-        // 최근 거래 찾기
-        const match = findRecentTrade(trades, body.aptName, body.dong, body.floor)
-        if (match && !bestMatch) {
-          bestMatch = match
+        // aptName이 제공된 경우에만 최근 거래 찾기
+        if (body.aptName) {
+          const match = findRecentTrade(trades, body.aptName, body.dong, body.floor)
+          if (match && !bestMatch) {
+            bestMatch = match
+          }
         }
       } catch (error) {
         console.error(`Error fetching ${ym}:`, error)
       }
     }
 
-    if (!bestMatch && allTrades.length > 0) {
+    // aptName이 제공된 경우에만 정확한 매치 시도
+    if (body.aptName && !bestMatch && allTrades.length > 0) {
       // 정확한 매치가 없으면 아파트명만으로 필터링
       const filtered = allTrades.filter(t =>
         t.aptNm.includes(body.aptName) || body.aptName.includes(t.aptNm)
@@ -67,9 +70,11 @@ export async function handleSearchRealEstate(request: Request): Promise<Response
       JSON.stringify({
         success: true,
         trade: bestMatch,
-        similarTrades: allTrades
-          .filter(t => t.aptNm.includes(body.aptName) || body.aptName.includes(t.aptNm))
-          .slice(0, 10), // 유사한 거래 최대 10개
+        similarTrades: body.aptName
+          ? allTrades
+              .filter(t => t.aptNm.includes(body.aptName) || body.aptName.includes(t.aptNm))
+              .slice(0, 10)
+          : allTrades, // aptName이 없으면 전체 반환
       }),
       {
         status: 200,

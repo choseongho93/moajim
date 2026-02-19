@@ -18,6 +18,7 @@ interface ApartmentTrade {
   dealDay: string
   buildYear: string
   jibun: string
+  umdNm: string
 }
 
 interface SearchRealEstateResponse {

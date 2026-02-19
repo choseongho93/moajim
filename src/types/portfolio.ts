@@ -32,6 +32,15 @@ export interface StockHolding {
   exchangeRate: number
 }
 
+export interface RealEstateHolding {
+  id: string
+  type: 'residential' | 'commercial'
+  name: string // 아파트명 또는 건물명
+  address?: string // 주소
+  value: number // 가액 (만원)
+  dealDate?: string // 거래일
+}
+
 export interface DetailedAssets {
   // 현금성 자산 (만원)
   deposit: number          // 예금
@@ -47,10 +56,11 @@ export interface DetailedAssets {
   governmentBonds: number // 국채
   corporateBonds: number  // 회사채
 
-  // 부동산 (만원)
-  residential: number     // 주거용
-  commercial: number      // 상업용
-  reits: number          // REITs
+  // 부동산 (배열)
+  realEstateHoldings: RealEstateHolding[]
+  residential: number     // 주거용 (legacy)
+  commercial: number      // 상업용 (legacy)
+  reits: number          // REITs (legacy)
 
   // 귀금속 (만원)
   gold: number           // 금
