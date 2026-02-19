@@ -38,10 +38,10 @@ export interface DetailedAssets {
   savings: number          // 적금
   cma: number             // CMA/MMF
 
-  // 주식 (실시간 계산)
-  stockHoldings: StockHolding[]
-  domesticStocks: number  // 국내주식 (수동 입력)
-  etf: number            // ETF (수동 입력)
+  // 주식 (만원)
+  domesticStocks: number  // 국내주식
+  foreignStocks: number   // 해외주식
+  etf: number            // ETF
 
   // 채권 (만원)
   governmentBonds: number // 국채
@@ -51,6 +51,10 @@ export interface DetailedAssets {
   residential: number     // 주거용
   commercial: number      // 상업용
   reits: number          // REITs
+
+  // 귀금속 (만원)
+  gold: number           // 금
+  silver: number         // 은
 
   // 암호화폐 (실시간 계산)
   cryptoHoldings: CryptoHolding[]

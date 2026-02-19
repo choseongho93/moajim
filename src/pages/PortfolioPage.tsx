@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
 import type { Investor, Assets, AnalysisResult, DetailedAssets, CryptoHolding } from '../types/portfolio'
 import { fetchInvestors, analyzePortfolio } from '../api/portfolio'
-import { formatKoreanAmount } from '../utils/currency'
+import { formatKoreanAmount, formatTextWithCommas } from '../utils/currency'
 import { getCryptoPrices, CRYPTO_LIST } from '../api/prices'
+import { searchRealEstate, parseDealAmount } from '../api/realestate'
+import { getCities, getDistricts, getLawdCode } from '../data/lawdCodes'
 
 interface PortfolioPageProps {
   initialSubView?: string
@@ -30,6 +32,8 @@ export default function PortfolioPage({ initialSubView }: PortfolioPageProps) {
     residential: 0,
     commercial: 0,
     reits: 0,
+    gold: 0,
+    silver: 0,
     cryptoHoldings: [],
   })
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null)
@@ -182,9 +186,23 @@ function AssetInputView({
   onAnalyze: () => void
   onBack: () => void
 }) {
-  const [activeCategory, setActiveCategory] = useState<'cash' | 'stocks' | 'bonds' | 'realEstate' | 'crypto'>('cash')
+  const [activeCategory, setActiveCategory] = useState<'cash' | 'stocks' | 'bonds' | 'realEstate' | 'commodity' | 'crypto'>('cash')
   const [cryptoPrices, setCryptoPrices] = useState<Record<string, number>>({})
   const [priceLoading, setPriceLoading] = useState(false)
+
+  // 부동산 입력 모드
+  const [realEstateInputMode, setRealEstateInputMode] = useState<'manual' | 'search'>('manual')
+
+  // 실거래가 조회
+  const [realEstateSearch, setRealEstateSearch] = useState({
+    city: '',
+    district: '',
+    aptName: '',
+    dong: '',
+    floor: '',
+  })
+  const [realEstateLoading, setRealEstateLoading] = useState(false)
+  const [realEstateResult, setRealEstateResult] = useState<any>(null)
 
   // 코인 가격 가져오기
   useEffect(() => {
@@ -203,7 +221,6 @@ function AssetInputView({
       fields: [
         { key: 'deposit', label: '예금', placeholder: '1000' },
         { key: 'savings', label: '적금', placeholder: '500' },
-        { key: 'cma', label: 'CMA/MMF', placeholder: '200' },
       ],
     },
     stocks: {
@@ -212,7 +229,6 @@ function AssetInputView({
       fields: [
         { key: 'domesticStocks', label: '국내주식', placeholder: '2000' },
         { key: 'foreignStocks', label: '해외주식', placeholder: '1500' },
-        { key: 'etf', label: 'ETF', placeholder: '1000' },
       ],
     },
     bonds: {
@@ -224,12 +240,19 @@ function AssetInputView({
       ],
     },
     realEstate: {
-      label: '부동산',
+      label: '부동산 (실거래가 기준)',
       icon: '🏠',
       fields: [
         { key: 'residential', label: '주거용', placeholder: '10000' },
         { key: 'commercial', label: '상업용', placeholder: '5000' },
-        { key: 'reits', label: 'REITs', placeholder: '500' },
+      ],
+    },
+    commodity: {
+      label: '귀금속',
+      icon: '🪙',
+      fields: [
+        { key: 'gold', label: '금', placeholder: '1000' },
+        { key: 'silver', label: '은', placeholder: '500' },
       ],
     },
     crypto: {
@@ -268,6 +291,44 @@ function AssetInputView({
     setDetailedAssets({ ...detailedAssets, cryptoHoldings: newHoldings })
   }
 
+  // 실거래가 조회
+  const handleRealEstateSearch = async () => {
+    if (!realEstateSearch.city || !realEstateSearch.district || !realEstateSearch.aptName) {
+      alert('시/도, 시/군/구, 아파트명을 입력해주세요')
+      return
+    }
+
+    const lawdCd = getLawdCode(realEstateSearch.city, realEstateSearch.district)
+    if (!lawdCd) {
+      alert('법정동 코드를 찾을 수 없습니다')
+      return
+    }
+
+    setRealEstateLoading(true)
+    setRealEstateResult(null)
+
+    try {
+      const result = await searchRealEstate({
+        lawdCd,
+        aptName: realEstateSearch.aptName,
+        dong: realEstateSearch.dong || undefined,
+        floor: realEstateSearch.floor || undefined,
+      })
+
+      setRealEstateResult(result)
+
+      // 최근 거래가 있으면 자동으로 주거용에 입력
+      if (result.trade) {
+        const amount = parseDealAmount(result.trade.dealAmount)
+        setDetailedAssets({ ...detailedAssets, residential: amount })
+      }
+    } catch (error: any) {
+      alert(`조회 실패: ${error.message}`)
+    } finally {
+      setRealEstateLoading(false)
+    }
+  }
+
   const cryptoTotalKRW = detailedAssets.cryptoHoldings.reduce(
     (sum, holding) => sum + holding.quantity * holding.currentPrice,
     0
@@ -293,6 +354,7 @@ function AssetInputView({
     stocks: detailedAssets.domesticStocks + detailedAssets.foreignStocks + detailedAssets.etf,
     bonds: detailedAssets.governmentBonds + detailedAssets.corporateBonds,
     realEstate: detailedAssets.residential + detailedAssets.commercial + detailedAssets.reits,
+    commodity: detailedAssets.gold + detailedAssets.silver,
     crypto: cryptoTotalManwon,
   }
 
@@ -325,9 +387,17 @@ function AssetInputView({
           </div>
 
           <div className="mt-5">
-            <h3 className="text-lg font-bold text-gray-900 mb-4">
-              보유 자산 입력
-            </h3>
+            <div className="mb-4">
+              <h3 className="text-lg font-bold text-gray-900 mb-2">
+                보유 자산 입력
+              </h3>
+              <div className="flex items-center gap-2 text-xs text-gray-500">
+                <svg className="w-4 h-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                </svg>
+                <span>입력하신 자산 정보는 DB에 저장되지 않으며, 분석에만 사용됩니다</span>
+              </div>
+            </div>
 
             {/* 카테고리 탭 */}
             <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
@@ -352,8 +422,34 @@ function AssetInputView({
               ))}
             </div>
 
+            {/* 부동산 입력 모드 선택 */}
+            {activeCategory === 'realEstate' && (
+              <div className="flex gap-2 mb-4 p-1 bg-gray-100 rounded-lg">
+                <button
+                  onClick={() => setRealEstateInputMode('manual')}
+                  className={`flex-1 py-2 rounded-md text-sm font-medium transition-all ${
+                    realEstateInputMode === 'manual'
+                      ? 'bg-white text-[#F15F5F] shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  직접 입력
+                </button>
+                <button
+                  onClick={() => setRealEstateInputMode('search')}
+                  className={`flex-1 py-2 rounded-md text-sm font-medium transition-all ${
+                    realEstateInputMode === 'search'
+                      ? 'bg-white text-[#F15F5F] shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  실거래가 조회
+                </button>
+              </div>
+            )}
+
             {/* 일반 자산 입력 필드 */}
-            {activeCategory !== 'crypto' && (
+            {activeCategory !== 'crypto' && activeCategory !== 'realEstate' && (
               <div className="space-y-4">
                 {categories[activeCategory].fields.map((field) => (
                   <div key={field.key}>
@@ -367,11 +463,15 @@ function AssetInputView({
                     </div>
                     <div className="relative">
                       <input
-                        type="number"
-                        value={(detailedAssets[field.key as keyof DetailedAssets] as number) || ''}
-                        onChange={(e) =>
-                          setDetailedAssets({ ...detailedAssets, [field.key]: Number(e.target.value) })
-                        }
+                        type="text"
+                        value={(detailedAssets[field.key as keyof DetailedAssets] as number) ? (detailedAssets[field.key as keyof DetailedAssets] as number).toLocaleString() : ''}
+                        onChange={(e) => {
+                          const value = e.target.value.replace(/,/g, '')
+                          const numValue = value === '' ? 0 : Number(value)
+                          if (!isNaN(numValue)) {
+                            setDetailedAssets({ ...detailedAssets, [field.key]: numValue })
+                          }
+                        }}
                         className="w-full px-3 py-3 pr-14 rounded-lg border border-gray-200 focus:border-[#F15F5F] focus:outline-none transition-colors"
                         placeholder={field.placeholder}
                       />
@@ -381,6 +481,173 @@ function AssetInputView({
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+
+            {/* 부동산 - 직접 입력 */}
+            {activeCategory === 'realEstate' && realEstateInputMode === 'manual' && (
+              <div className="space-y-4">
+                {categories[activeCategory].fields.map((field) => (
+                  <div key={field.key}>
+                    <div className="flex justify-between items-baseline mb-1">
+                      <label className="text-sm font-medium text-gray-700">
+                        {field.label}
+                      </label>
+                      <span className="text-sm font-bold text-[#F15F5F]">
+                        {formatKoreanAmount(detailedAssets[field.key as keyof DetailedAssets] as number)}
+                      </span>
+                    </div>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={(detailedAssets[field.key as keyof DetailedAssets] as number) ? (detailedAssets[field.key as keyof DetailedAssets] as number).toLocaleString() : ''}
+                        onChange={(e) => {
+                          const value = e.target.value.replace(/,/g, '')
+                          const numValue = value === '' ? 0 : Number(value)
+                          if (!isNaN(numValue)) {
+                            setDetailedAssets({ ...detailedAssets, [field.key]: numValue })
+                          }
+                        }}
+                        className="w-full px-3 py-3 pr-14 rounded-lg border border-gray-200 focus:border-[#F15F5F] focus:outline-none transition-colors"
+                        placeholder={field.placeholder}
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400 font-medium">
+                        만원
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* 부동산 - 실거래가 조회 */}
+            {activeCategory === 'realEstate' && realEstateInputMode === 'search' && (
+              <div className="space-y-4">
+                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-xs text-blue-800 leading-relaxed">
+                    국토교통부 실거래가 데이터를 기반으로 최근 3개월 거래가를 조회합니다.
+                    정확한 매칭을 위해 아파트명을 정확히 입력해주세요.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1.5">시/도</label>
+                    <select
+                      value={realEstateSearch.city}
+                      onChange={(e) => setRealEstateSearch({ ...realEstateSearch, city: e.target.value, district: '' })}
+                      className="w-full px-3 py-2.5 text-sm rounded-lg border border-gray-200 focus:border-[#F15F5F] focus:outline-none"
+                    >
+                      <option value="">선택하세요</option>
+                      {getCities().map(city => (
+                        <option key={city} value={city}>{city}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1.5">시/군/구</label>
+                    <select
+                      value={realEstateSearch.district}
+                      onChange={(e) => setRealEstateSearch({ ...realEstateSearch, district: e.target.value })}
+                      disabled={!realEstateSearch.city}
+                      className="w-full px-3 py-2.5 text-sm rounded-lg border border-gray-200 focus:border-[#F15F5F] focus:outline-none disabled:bg-gray-100"
+                    >
+                      <option value="">선택하세요</option>
+                      {realEstateSearch.city && getDistricts(realEstateSearch.city).map(district => (
+                        <option key={district} value={district}>{district}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1.5">아파트명</label>
+                  <input
+                    type="text"
+                    value={realEstateSearch.aptName}
+                    onChange={(e) => setRealEstateSearch({ ...realEstateSearch, aptName: e.target.value })}
+                    className="w-full px-3 py-2.5 text-sm rounded-lg border border-gray-200 focus:border-[#F15F5F] focus:outline-none"
+                    placeholder="예: 래미안자이"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1.5">동 (선택)</label>
+                    <input
+                      type="text"
+                      value={realEstateSearch.dong}
+                      onChange={(e) => setRealEstateSearch({ ...realEstateSearch, dong: e.target.value })}
+                      className="w-full px-3 py-2.5 text-sm rounded-lg border border-gray-200 focus:border-[#F15F5F] focus:outline-none"
+                      placeholder="101"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1.5">층 (선택)</label>
+                    <input
+                      type="text"
+                      value={realEstateSearch.floor}
+                      onChange={(e) => setRealEstateSearch({ ...realEstateSearch, floor: e.target.value })}
+                      className="w-full px-3 py-2.5 text-sm rounded-lg border border-gray-200 focus:border-[#F15F5F] focus:outline-none"
+                      placeholder="10"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleRealEstateSearch}
+                  disabled={realEstateLoading || !realEstateSearch.city || !realEstateSearch.district || !realEstateSearch.aptName}
+                  className="w-full py-3.5 bg-[#F15F5F] text-white rounded-lg font-semibold hover:bg-[#E14E4E] transition-all disabled:bg-gray-300 disabled:cursor-not-allowed shadow-sm"
+                >
+                  {realEstateLoading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      조회 중...
+                    </span>
+                  ) : '실거래가 조회하기'}
+                </button>
+
+                {realEstateResult && realEstateResult.trade && (
+                  <div className="p-5 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border border-green-200">
+                    <div className="flex items-start justify-between mb-3">
+                      <div>
+                        <p className="text-xs text-green-700 font-medium mb-1">✓ 최근 거래가 발견</p>
+                        <p className="text-2xl font-bold text-green-900">
+                          {parseDealAmount(realEstateResult.trade.dealAmount).toLocaleString()}
+                          <span className="text-sm font-normal text-green-700 ml-1">만원</span>
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-xs text-green-800 space-y-1.5 pt-3 border-t border-green-200">
+                      <p className="font-medium">{realEstateResult.trade.aptNm}</p>
+                      <div className="flex gap-3 text-green-700">
+                        {realEstateResult.trade.aptDong && <span>{realEstateResult.trade.aptDong}동</span>}
+                        <span>{realEstateResult.trade.floor}층</span>
+                        <span>{realEstateResult.trade.excluUseAr}㎡</span>
+                      </div>
+                      <p className="text-green-600">
+                        거래일: {realEstateResult.trade.dealYear}.{realEstateResult.trade.dealMonth.padStart(2, '0')}.{realEstateResult.trade.dealDay.padStart(2, '0')}
+                      </p>
+                    </div>
+                    <p className="text-xs text-green-600 mt-3 text-center">
+                      자동으로 주거용 부동산에 입력되었습니다
+                    </p>
+                  </div>
+                )}
+
+                {realEstateResult && !realEstateResult.trade && (
+                  <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                    <p className="text-sm text-yellow-800 text-center">
+                      최근 3개월 내 거래 내역이 없습니다.<br/>
+                      아파트명을 정확히 입력하거나 다른 조건으로 검색해보세요.
+                    </p>
+                  </div>
+                )}
               </div>
             )}
 
@@ -426,7 +693,7 @@ function AssetInputView({
                       <div className="text-right">
                         <p className="text-xs text-gray-500">평가금액</p>
                         <p className="font-bold text-[#F15F5F]">
-                          {Math.round((holding.quantity * holding.currentPrice) / 10000)}만원
+                          {Math.round((holding.quantity * holding.currentPrice) / 10000).toLocaleString()}만원
                         </p>
                       </div>
                     </div>
@@ -532,7 +799,7 @@ function ResultsView({
               <div className="space-y-2">
                 {Object.entries(analysisResult.currentAllocation).map(([key, value]) => (
                   <div key={key} className="flex justify-between text-sm">
-                    <span className="text-gray-600">{key === 'realEstate' ? '부동산' : key === 'stocks' ? '주식' : key === 'bonds' ? '채권' : key === 'cash' ? '현금' : key}</span>
+                    <span className="text-gray-600">{key === 'realEstate' ? '부동산' : key === 'stocks' ? '주식' : key === 'bonds' ? '채권' : key === 'cash' ? '현금' : key === 'crypto' ? '암호화폐' : key}</span>
                     <span className="font-semibold text-gray-900">{value.toFixed(1)}%</span>
                   </div>
                 ))}
@@ -544,7 +811,7 @@ function ResultsView({
               <div className="space-y-2">
                 {Object.entries(analysisResult.investor.allocation).map(([key, value]) => (
                   <div key={key} className="flex justify-between text-sm">
-                    <span className="text-gray-600">{key === 'realEstate' ? '부동산' : key === 'stocks' ? '주식' : key === 'bonds' ? '채권' : key === 'cash' ? '현금' : key}</span>
+                    <span className="text-gray-600">{key === 'realEstate' ? '부동산' : key === 'stocks' ? '주식' : key === 'bonds' ? '채권' : key === 'cash' ? '현금' : key === 'crypto' ? '암호화폐' : key}</span>
                     <span className="font-semibold text-[#F15F5F]">{value}%</span>
                   </div>
                 ))}
@@ -560,7 +827,7 @@ function ResultsView({
                   <span className="w-5 h-5 rounded-full bg-[#F15F5F] flex items-center justify-center flex-shrink-0 text-white text-xs font-bold mt-0.5">
                     {index + 1}
                   </span>
-                  <p className="text-sm text-gray-700">{item}</p>
+                  <p className="text-sm text-gray-700">{formatTextWithCommas(item)}</p>
                 </div>
               ))}
             </div>

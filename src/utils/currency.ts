@@ -36,3 +36,14 @@ export function formatKoreanAmount(manwon: number): string {
 export function formatCurrency(amount: number): string {
   return `${(amount / 10000).toFixed(0)}만원`
 }
+
+/**
+ * 텍스트 내의 숫자+만원 패턴을 찾아서 쉼표 추가
+ * @param text 원본 텍스트
+ * @returns 쉼표가 추가된 텍스트 (예: "77000만원" → "77,000만원")
+ */
+export function formatTextWithCommas(text: string): string {
+  return text.replace(/(\d+)(만원|억원)/g, (match, number, unit) => {
+    return `${parseInt(number).toLocaleString()}${unit}`
+  })
+}
