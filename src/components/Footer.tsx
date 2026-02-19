@@ -1,5 +1,5 @@
 interface FooterProps {
-  onNavigate: (view: 'home' | 'portfolio' | 'calculator') => void
+  onNavigate: (view: 'home' | 'portfolio' | 'calculator' | 'privacy') => void
 }
 
 export default function Footer({ onNavigate }: FooterProps) {
@@ -23,6 +23,12 @@ export default function Footer({ onNavigate }: FooterProps) {
               className="hover:text-[#F15F5F] transition-colors font-medium"
             >
               세금계산
+            </button>
+            <button
+              onClick={() => onNavigate('privacy')}
+              className="hover:text-[#F15F5F] transition-colors font-medium"
+            >
+              개인정보처리방침
             </button>
           </div>
         </div>
