@@ -724,12 +724,38 @@ function AssetInputView({
                         setAreaList([])
                         setRealEstateResult(null)
 
-                        // 구를 선택하면 상수에서 법정동 목록 로드 (즉시)
                         if (newDistrict && realEstateSearch.city) {
                           const lawdCd = getLawdCode(realEstateSearch.city, newDistrict)
+
                           if (lawdCd && hasDongData(lawdCd)) {
+                            // 로컬 데이터에 있으면 즉시 로드 (빠름)
                             const dongs = getDongList(lawdCd)
                             setDongList(dongs)
+                          } else if (lawdCd) {
+                            // 로컬 데이터에 없으면 API로 조회 (느림)
+                            setRealEstateLoading(true)
+                            try {
+                              const result = await searchRealEstate({
+                                lawdCd,
+                                aptName: '',
+                              })
+
+                              // API 응답에서 법정동 목록 추출 및 정렬
+                              const dongs = [...new Set(result.similarTrades.map((t: any) => t.umdNm))]
+                                .filter(Boolean)
+                                .sort((a, b) => a.localeCompare(b, 'ko-KR'))
+
+                              setDongList(dongs as string[])
+
+                              // 전체 거래 데이터도 저장 (나중에 재사용)
+                              setAllTrades(result.similarTrades || [])
+                            } catch (error: any) {
+                              console.error('법정동 조회 실패:', error)
+                              setToast({ message: '법정동 목록을 불러올 수 없습니다', type: 'error' })
+                              setDongList([])
+                            } finally {
+                              setRealEstateLoading(false)
+                            }
                           } else {
                             setDongList([])
                           }
@@ -750,16 +776,18 @@ function AssetInputView({
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1.5">
                     법정동
-                    {dongList.length > 0 && <span className="text-gray-500"> ({dongList.length}개)</span>}
+                    {realEstateLoading && <span className="text-gray-500 ml-1">(조회 중...)</span>}
+                    {!realEstateLoading && dongList.length > 0 && <span className="text-gray-500"> ({dongList.length}개)</span>}
                   </label>
                   <select
                     value={selectedDong}
                     onChange={(e) => handleSelectDong(e.target.value)}
-                    disabled={!realEstateSearch.district || dongList.length === 0}
+                    disabled={!realEstateSearch.district || (dongList.length === 0 && !realEstateLoading) || realEstateLoading}
                     className="w-full px-3 py-2.5 text-sm rounded-lg border border-gray-200 focus:border-[#F15F5F] focus:outline-none disabled:bg-gray-100"
                   >
                     <option value="">
                       {!realEstateSearch.district ? '구를 먼저 선택하세요' :
+                       realEstateLoading ? '법정동 목록 조회 중...' :
                        dongList.length === 0 ? '해당 지역 데이터가 없습니다' :
                        '법정동을 선택하세요 (선택 시 조회 시작)'}
                     </option>
