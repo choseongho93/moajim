@@ -1,6 +1,6 @@
 // 실거래가 API 서비스
 const API_KEY = '3f1f2c2bf9045370f2a379a9f3ff2d1af1fa91cefb44635549ce5a663a66c1d3'
-const BASE_URL = 'http://apis.data.go.kr/1613000/RTMSDataSvcAptTradeDev'
+const BASE_URL = 'https://apis.data.go.kr/1613000/RTMSDataSvcAptTrade'
 
 // 간단한 메모리 캐시 (24시간)
 const cache = new Map<string, { data: any; timestamp: number }>()
@@ -39,7 +39,7 @@ export async function fetchApartmentTrades(params: RealEstateParams): Promise<Ap
   }
 
   // API 호출
-  const url = new URL(`${BASE_URL}/getRTMSDataSvcAptTradeDev`)
+  const url = new URL(`${BASE_URL}/getRTMSDataSvcAptTrade`)
   url.searchParams.set('LAWD_CD', params.lawdCd)
   url.searchParams.set('DEAL_YMD', params.dealYmd)
   url.searchParams.set('serviceKey', API_KEY)
@@ -47,6 +47,12 @@ export async function fetchApartmentTrades(params: RealEstateParams): Promise<Ap
   url.searchParams.set('numOfRows', '999') // 최대한 많이 가져오기
 
   const response = await fetch(url.toString())
+
+  if (!response.ok) {
+    console.error(`API error ${response.status}: ${params.lawdCd}-${params.dealYmd}`)
+    return []
+  }
+
   const text = await response.text()
 
   // XML 파싱 (간단한 정규식 사용)

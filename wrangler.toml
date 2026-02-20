@@ -10,9 +10,8 @@ routes = [
 [observability]
 enabled = true
 
-# 추후 필요시 설정
-# [placement]
-# mode = "smart"
-
-# [vars]
-# MY_VARIABLE = "production_value"
+# D1 Database
+[[d1_databases]]
+binding = "DB"
+database_name = "moajim-db"
+database_id = "23ba175f-add7-4888-b9df-faee2a781d9d"

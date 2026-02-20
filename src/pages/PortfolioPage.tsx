@@ -3,10 +3,9 @@ import type { Investor, Assets, AnalysisResult, DetailedAssets, CryptoHolding, R
 import { fetchInvestors, analyzePortfolio } from '../api/portfolio'
 import { formatKoreanAmount, formatTextWithCommas } from '../utils/currency'
 import { getCryptoPrices, CRYPTO_LIST } from '../api/prices'
-import { searchRealEstate, parseDealAmount } from '../api/realestate'
-import { getCities, getDistricts, getLawdCode } from '../data/lawdCodes'
-import { getDongList, hasDongData } from '../data/dongCodes'
+import { searchRealEstate, parseDealAmount, getDongsByLawdCd, getApartmentsByDong, getAreasByApartment, getCitiesFromAPI, getDistrictsFromAPI } from '../api/realestate'
 import Toast from '../components/Toast'
+import LoadingOverlay from '../components/LoadingOverlay'
 
 interface PortfolioPageProps {
   initialSubView?: string
@@ -174,19 +173,28 @@ function AssetInputView({
   const [realEstateSearch, setRealEstateSearch] = useState({
     city: '',
     district: '',
+    lawdCd: '',
     aptName: '',
     dong: '',
     floor: '',
   })
+  const [cityList, setCityList] = useState<string[]>([])
+  const [districtList, setDistrictList] = useState<{ district: string; lawdCd: string }[]>([])
   const [realEstateLoading, setRealEstateLoading] = useState(false)
   const [realEstateResult, setRealEstateResult] = useState<any>(null)
-  const [allTrades, setAllTrades] = useState<any[]>([]) // 전체 거래 내역
   const [dongList, setDongList] = useState<string[]>([]) // 법정동 목록
-  const [apiCache, setApiCache] = useState<Record<string, any[]>>({}) // API 응답 캐시
   const [selectedDong, setSelectedDong] = useState<string>('') // 선택된 법정동
   const [apartmentList, setApartmentList] = useState<string[]>([]) // 단지 목록
   const [areaList, setAreaList] = useState<string[]>([]) // 평형 목록
   const [selectedArea, setSelectedArea] = useState<string>('') // 선택된 평형
+  const [loadingInfo, setLoadingInfo] = useState<{ message: string; tip: string } | null>(null) // 로딩 오버레이 정보
+
+  // 시/도 목록 가져오기
+  useEffect(() => {
+    if (activeCategory === 'realEstate' && cityList.length === 0) {
+      getCitiesFromAPI().then(cities => setCityList(cities))
+    }
+  }, [activeCategory])
 
   // 코인 가격 가져오기
   useEffect(() => {
@@ -233,7 +241,7 @@ function AssetInputView({
     },
     commodity: {
       label: '귀금속',
-      icon: '🪙',
+      icon: '✨',
       fields: [
         { key: 'gold', label: '금', placeholder: '1000' },
         { key: 'silver', label: '은', placeholder: '500' },
@@ -302,47 +310,9 @@ function AssetInputView({
     setDetailedAssets({ ...detailedAssets, realEstateHoldings: newHoldings })
   }
 
-  // 1단계: 구 선택 시 전체 거래 조회 및 법정동 목록 추출
-  const handleSearchApartments = async () => {
-    if (!realEstateSearch.city || !realEstateSearch.district) {
-      setToast({ message: '시/도, 시/군/구를 선택해주세요', type: 'error' })
-      return
-    }
+  // (법정동 목록은 구 선택 시 자동으로 D1에서 조회됨)
 
-    const lawdCd = getLawdCode(realEstateSearch.city, realEstateSearch.district)
-    if (!lawdCd) {
-      setToast({ message: '법정동 코드를 찾을 수 없습니다', type: 'error' })
-      return
-    }
-
-    setRealEstateLoading(true)
-    setAllTrades([])
-    setDongList([])
-    setSelectedDong('')
-    setApartmentList([])
-    setAreaList([])
-    setRealEstateResult(null)
-
-    try {
-      // 최근 거래 전체 조회
-      const result = await searchRealEstate({
-        lawdCd,
-        aptName: '', // 빈 문자열로 전체 조회
-      })
-
-      setAllTrades(result.similarTrades || [])
-
-      // 법정동 목록 추출 (중복 제거)
-      const dongs = [...new Set(result.similarTrades.map((t: any) => t.umdNm))].sort()
-      setDongList(dongs as string[])
-    } catch (error: any) {
-      setToast({ message: `조회 실패: ${error.message}`, type: 'error' })
-    } finally {
-      setRealEstateLoading(false)
-    }
-  }
-
-  // 2단계: 법정동 선택 시 아파트 단지 목록 가져오기 (캐시 활용)
+  // 2단계: 법정동 선택 시 아파트 단지 목록 가져오기 (D1 조회)
   const handleSelectDong = async (dong: string) => {
     setSelectedDong(dong)
     setRealEstateSearch({ ...realEstateSearch, aptName: '' })
@@ -350,76 +320,90 @@ function AssetInputView({
     setRealEstateResult(null)
     setApartmentList([])
 
-    if (!dong || !realEstateSearch.city || !realEstateSearch.district) return
+    if (!dong || !realEstateSearch.lawdCd) return
 
-    const lawdCd = getLawdCode(realEstateSearch.city, realEstateSearch.district)
-    if (!lawdCd) return
+    const lawdCd = realEstateSearch.lawdCd
 
-    const cacheKey = `${lawdCd}-${dong}`
-
-    // 캐시 확인
-    if (apiCache[cacheKey]) {
-      // 캐시에서 가져오기 (즉시)
-      const trades = apiCache[cacheKey]
-      setAllTrades(trades)
-      const apartments = [...new Set(trades.map((t: any) => t.aptNm))].sort((a, b) => a.localeCompare(b, 'ko-KR'))
-      setApartmentList(apartments as string[])
-      return
-    }
-
-    // 캐시에 없으면 API로 조회
     setRealEstateLoading(true)
+    setLoadingInfo({
+      message: '아파트 단지 목록을 조회하고 있어요',
+      tip: '처음 조회 시 시간이 걸릴 수 있습니다. 오래 걸리면 직접 입력을 이용해주세요.'
+    })
     try {
-      const result = await searchRealEstate({
-        lawdCd,
-        aptName: '',
-      })
-
-      setAllTrades(result.similarTrades || [])
-
-      // 선택한 법정동의 아파트 단지 목록 추출
-      const trades = result.similarTrades.filter((t: any) => t.umdNm === dong)
-      const apartments = [...new Set(trades.map((t: any) => t.aptNm))].sort((a, b) => a.localeCompare(b, 'ko-KR'))
-      setApartmentList(apartments as string[])
-
-      // 캐시에 저장
-      setApiCache({ ...apiCache, [cacheKey]: result.similarTrades || [] })
+      const apartments = await getApartmentsByDong(lawdCd, dong)
+      setApartmentList(apartments)
     } catch (error: any) {
       setToast({ message: `조회 실패: ${error.message}`, type: 'error' })
+    } finally {
+      setRealEstateLoading(false)
+      setLoadingInfo(null)
+    }
+  }
+
+  // 3단계: 단지 선택 시 평형 목록 조회 (D1)
+  const handleSelectApartment = async (aptName: string) => {
+    setRealEstateSearch({ ...realEstateSearch, aptName })
+    setSelectedArea('')
+    setRealEstateResult(null)
+    setAreaList([])
+
+    if (!aptName || !realEstateSearch.lawdCd || !selectedDong) return
+
+    const lawdCd = realEstateSearch.lawdCd
+
+    setRealEstateLoading(true)
+    try {
+      const areas = await getAreasByApartment(lawdCd, selectedDong, aptName)
+      setAreaList(areas)
+    } catch (error: any) {
+      setToast({ message: `평형 조회 실패: ${error.message}`, type: 'error' })
     } finally {
       setRealEstateLoading(false)
     }
   }
 
-  // 3단계: 단지 선택 시 평형 목록 추출
-  const handleSelectApartment = (aptName: string) => {
-    setRealEstateSearch({ ...realEstateSearch, aptName })
-    setSelectedArea('')
+  // 4단계: 평형 선택 시 실거래가 API로 최근 거래가 조회
+  const handleSelectArea = async (area: string) => {
+    setSelectedArea(area)
     setRealEstateResult(null)
 
-    // 선택한 법정동과 아파트의 평형 목록 추출
-    const trades = allTrades.filter((t: any) => t.umdNm === selectedDong && t.aptNm === aptName)
-    const areas = [...new Set(trades.map((t: any) => t.excluUseAr))].sort((a, b) => parseFloat(a) - parseFloat(b))
-    setAreaList(areas as string[])
-  }
+    if (!realEstateSearch.lawdCd || !realEstateSearch.aptName) return
 
-  // 4단계: 평형 선택 시 최근 거래가 조회
-  const handleSelectArea = (area: string) => {
-    setSelectedArea(area)
+    const lawdCd = realEstateSearch.lawdCd
 
-    // 선택한 법정동, 단지, 평형에 맞는 최근 거래 찾기
-    const trades = allTrades.filter(
-      (t: any) => t.umdNm === selectedDong && t.aptNm === realEstateSearch.aptName && t.excluUseAr === area
-    )
-
-    if (trades.length > 0) {
-      // 가장 최근 거래
-      trades.sort((a: any, b: any) => {
-        const dateA = parseInt(a.dealYear + a.dealMonth.padStart(2, '0') + a.dealDay.padStart(2, '0'))
-        const dateB = parseInt(b.dealYear + b.dealMonth.padStart(2, '0') + b.dealDay.padStart(2, '0'))
-        return dateB - dateA
+    setRealEstateLoading(true)
+    setLoadingInfo({
+      message: '실거래가를 조회하고 있어요',
+      tip: '국토교통부 실거래가 데이터를 검색하고 있습니다.'
+    })
+    try {
+      const result = await searchRealEstate({
+        lawdCd,
+        aptName: realEstateSearch.aptName,
+        dong: selectedDong,
       })
-      setRealEstateResult({ trade: trades[0] })
+
+      // 선택한 평형에 맞는 거래 필터링
+      const matchingTrades = (result.similarTrades || []).filter(
+        (t: any) => t.excluUseAr === area
+      )
+
+      if (matchingTrades.length > 0) {
+        // 가장 최근 거래
+        matchingTrades.sort((a: any, b: any) => {
+          const dateA = parseInt(a.dealYear + a.dealMonth.padStart(2, '0') + a.dealDay.padStart(2, '0'))
+          const dateB = parseInt(b.dealYear + b.dealMonth.padStart(2, '0') + b.dealDay.padStart(2, '0'))
+          return dateB - dateA
+        })
+        setRealEstateResult({ trade: matchingTrades[0] })
+      } else if (result.trade) {
+        setRealEstateResult({ trade: result.trade })
+      }
+    } catch (error: any) {
+      setToast({ message: `실거래가 조회 실패: ${error.message}`, type: 'error' })
+    } finally {
+      setRealEstateLoading(false)
+      setLoadingInfo(null)
     }
   }
 
@@ -457,7 +441,6 @@ function AssetInputView({
       dong: '',
       floor: '',
     })
-    setAllTrades([])
     setApartmentList([])
     setAreaList([])
     setSelectedArea('')
@@ -511,6 +494,11 @@ function AssetInputView({
           onClose={() => setToast(null)}
         />
       )}
+      <LoadingOverlay
+        message={loadingInfo?.message || ''}
+        tip={loadingInfo?.tip || ''}
+        show={!!loadingInfo}
+      />
       <div className="max-w-4xl mx-auto">
 
         <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-6">
@@ -524,12 +512,6 @@ function AssetInputView({
               <h3 className="text-lg font-bold text-gray-900 mb-2">
                 보유 자산 입력
               </h3>
-              <div className="flex items-center gap-2 text-xs text-gray-500">
-                <svg className="w-4 h-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                </svg>
-                <span>입력하신 자산 정보는 DB에 저장되지 않으며, 분석에만 사용됩니다</span>
-              </div>
             </div>
 
             {/* 카테고리 탭 */}
@@ -697,15 +679,22 @@ function AssetInputView({
                     <select
                       value={realEstateSearch.city}
                       onChange={(e) => {
-                        setRealEstateSearch({ ...realEstateSearch, city: e.target.value, district: '', aptName: '' })
+                        const newCity = e.target.value
+                        setRealEstateSearch({ ...realEstateSearch, city: newCity, district: '', lawdCd: '', aptName: '' })
+                        setDistrictList([])
+                        setDongList([])
+                        setSelectedDong('')
                         setApartmentList([])
                         setAreaList([])
                         setRealEstateResult(null)
+                        if (newCity) {
+                          getDistrictsFromAPI(newCity).then(districts => setDistrictList(districts))
+                        }
                       }}
                       className="w-full px-3 py-2.5 text-sm rounded-lg border border-gray-200 focus:border-[#F15F5F] focus:outline-none"
                     >
                       <option value="">선택하세요</option>
-                      {getCities().map(city => (
+                      {cityList.map(city => (
                         <option key={city} value={city}>{city}</option>
                       ))}
                     </select>
@@ -717,55 +706,40 @@ function AssetInputView({
                       value={realEstateSearch.district}
                       onChange={async (e) => {
                         const newDistrict = e.target.value
-                        setRealEstateSearch({ ...realEstateSearch, district: newDistrict, aptName: '' })
-                        setDongList([])
+                        const selected = districtList.find(d => d.district === newDistrict)
+                        const lawdCd = selected?.lawdCd || ''
+                        setRealEstateSearch({ ...realEstateSearch, district: newDistrict, lawdCd, aptName: '' })
                         setSelectedDong('')
-                        setApartmentList([])
-                        setAreaList([])
+                        setSelectedArea('')
                         setRealEstateResult(null)
 
-                        if (newDistrict && realEstateSearch.city) {
-                          const lawdCd = getLawdCode(realEstateSearch.city, newDistrict)
-
-                          if (lawdCd && hasDongData(lawdCd)) {
-                            // 로컬 데이터에 있으면 즉시 로드 (빠름)
-                            const dongs = getDongList(lawdCd)
+                        if (lawdCd) {
+                          setRealEstateLoading(true)
+                          try {
+                            const dongs = await getDongsByLawdCd(lawdCd)
                             setDongList(dongs)
-                          } else if (lawdCd) {
-                            // 로컬 데이터에 없으면 API로 조회 (느림)
-                            setRealEstateLoading(true)
-                            try {
-                              const result = await searchRealEstate({
-                                lawdCd,
-                                aptName: '',
-                              })
-
-                              // API 응답에서 법정동 목록 추출 및 정렬
-                              const dongs = [...new Set(result.similarTrades.map((t: any) => t.umdNm))]
-                                .filter(Boolean)
-                                .sort((a, b) => a.localeCompare(b, 'ko-KR'))
-
-                              setDongList(dongs as string[])
-
-                              // 전체 거래 데이터도 저장 (나중에 재사용)
-                              setAllTrades(result.similarTrades || [])
-                            } catch (error: any) {
-                              console.error('법정동 조회 실패:', error)
-                              setToast({ message: '법정동 목록을 불러올 수 없습니다', type: 'error' })
-                              setDongList([])
-                            } finally {
-                              setRealEstateLoading(false)
-                            }
-                          } else {
+                            setApartmentList([])
+                            setAreaList([])
+                          } catch (error: any) {
+                            console.error('법정동 조회 실패:', error)
+                            setToast({ message: '법정동 목록을 불러올 수 없습니다', type: 'error' })
                             setDongList([])
+                            setApartmentList([])
+                            setAreaList([])
+                          } finally {
+                            setRealEstateLoading(false)
                           }
+                        } else {
+                          setDongList([])
+                          setApartmentList([])
+                          setAreaList([])
                         }
                       }}
-                      disabled={!realEstateSearch.city}
+                      disabled={!realEstateSearch.city || districtList.length === 0}
                       className="w-full px-3 py-2.5 text-sm rounded-lg border border-gray-200 focus:border-[#F15F5F] focus:outline-none disabled:bg-gray-100"
                     >
-                      <option value="">선택하세요</option>
-                      {realEstateSearch.city && getDistricts(realEstateSearch.city).map(district => (
+                      <option value="">{!realEstateSearch.city ? '선택하세요' : districtList.length === 0 ? '로딩 중...' : '선택하세요'}</option>
+                      {districtList.map(({ district }) => (
                         <option key={district} value={district}>{district}</option>
                       ))}
                     </select>
@@ -776,8 +750,6 @@ function AssetInputView({
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1.5">
                     법정동
-                    {realEstateLoading && <span className="text-gray-500 ml-1">(조회 중...)</span>}
-                    {!realEstateLoading && dongList.length > 0 && <span className="text-gray-500"> ({dongList.length}개)</span>}
                   </label>
                   <select
                     value={selectedDong}
@@ -789,7 +761,7 @@ function AssetInputView({
                       {!realEstateSearch.district ? '구를 먼저 선택하세요' :
                        realEstateLoading ? '법정동 목록 조회 중...' :
                        dongList.length === 0 ? '해당 지역 데이터가 없습니다' :
-                       '법정동을 선택하세요 (선택 시 조회 시작)'}
+                       '법정동을 선택하세요'}
                     </option>
                     {dongList.map(dong => (
                       <option key={dong} value={dong}>{dong}</option>
@@ -801,8 +773,6 @@ function AssetInputView({
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1.5">
                     아파트 단지
-                    {realEstateLoading && <span className="text-gray-500 ml-1">(조회 중...)</span>}
-                    {!realEstateLoading && apartmentList.length > 0 && <span className="text-gray-500"> ({apartmentList.length}개)</span>}
                   </label>
                   <select
                     value={realEstateSearch.aptName}
@@ -826,7 +796,7 @@ function AssetInputView({
                 {areaList.length > 0 && (
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                      전용면적 <span className="text-gray-500">({areaList.length}개)</span>
+                      전용면적
                     </label>
                     <select
                       value={selectedArea}

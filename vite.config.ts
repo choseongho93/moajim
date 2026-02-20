@@ -9,6 +9,14 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:8787',
         changeOrigin: true,
+        configure: (proxy) => {
+          proxy.on('error', (err, _req, res) => {
+            if ('headersSent' in res && !res.headersSent) {
+              (res as any).writeHead(502, { 'Content-Type': 'application/json' })
+              ;(res as any).end(JSON.stringify({ error: 'Worker dev server not running. Run: npx wrangler dev' }))
+            }
+          })
+        },
       }
     }
   }
