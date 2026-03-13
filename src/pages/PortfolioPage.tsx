@@ -790,6 +790,19 @@ function AssetInputView({
                       <option key={apt} value={apt}>{apt}</option>
                     ))}
                   </select>
+                  {selectedDong && !realEstateLoading && (
+                    <p className="mt-1.5 text-[11px] text-gray-400 leading-relaxed">
+                      최근 3개월 실거래 기준 단지 목록입니다. 목록에 없는 단지는{' '}
+                      <button
+                        type="button"
+                        onClick={() => setRealEstateInputMode('manual')}
+                        className="text-[#F15F5F] underline underline-offset-2 hover:text-[#d94f4f]"
+                      >
+                        직접 입력
+                      </button>
+                      을 이용해주세요.
+                    </p>
+                  )}
                 </div>
 
                 {/* Step 4: 평형 선택 */}

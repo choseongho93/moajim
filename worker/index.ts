@@ -21,20 +21,18 @@ async function getCityAndDistrict(env: any, lawdCd: string): Promise<{ city: str
  */
 async function fetchRecentTrades(lawdCd: string, months: number) {
   const now = new Date()
-  let allTrades: any[] = []
 
-  for (let i = 0; i < months; i++) {
+  const promises = Array.from({ length: months }, (_, i) => {
     const date = new Date(now.getFullYear(), now.getMonth() - i, 1)
     const ym = `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}`
-    try {
-      const trades = await fetchApartmentTrades({ lawdCd, dealYmd: ym })
-      allTrades = allTrades.concat(trades)
-    } catch (error) {
+    return fetchApartmentTrades({ lawdCd, dealYmd: ym }).catch(error => {
       console.error(`Error fetching ${ym}:`, error)
-    }
-  }
+      return [] as any[]
+    })
+  })
 
-  return allTrades
+  const results = await Promise.all(promises)
+  return results.flat()
 }
 
 /**
@@ -63,22 +61,28 @@ async function saveApartmentsToD1(env: any, lawdCd: string, location: { city: st
     }
   }
 
+  const stmts: any[] = []
+
   for (const apt of apartments.values()) {
-    try {
-      await env.DB.prepare(
+    stmts.push(
+      env.DB.prepare(
         `INSERT OR REPLACE INTO apartments (lawd_cd, dong_name, apt_name, city, district, created_at)
          VALUES (?, ?, ?, ?, ?, datetime('now', '+9 hours'))`
-      ).bind(lawdCd, apt.umdNm, apt.aptNm, location.city, location.district).run()
-    } catch (e) { /* ignore */ }
+      ).bind(lawdCd, apt.umdNm, apt.aptNm, location.city, location.district)
+    )
   }
 
   for (const area of areas.values()) {
-    try {
-      await env.DB.prepare(
+    stmts.push(
+      env.DB.prepare(
         `INSERT OR IGNORE INTO apartment_areas (lawd_cd, dong_name, apt_name, area, created_at)
          VALUES (?, ?, ?, ?, datetime('now', '+9 hours'))`
-      ).bind(lawdCd, area.umdNm, area.aptNm, area.area).run()
-    } catch (e) { /* ignore */ }
+      ).bind(lawdCd, area.umdNm, area.aptNm, area.area)
+    )
+  }
+
+  if (stmts.length > 0) {
+    await env.DB.batch(stmts)
   }
 
   console.log(`D1 populated: ${apartments.size} apartments, ${areas.size} areas for ${location.city} ${location.district}`)
@@ -194,8 +198,10 @@ router.get('/api/regions/apartments', async (request, env) => {
        ORDER BY apt_name COLLATE NOCASE`
     ).bind(lawdCd, dongName).all()
 
+    let fromCache = result.results.length > 0
+
     // 2. D1에 데이터 없으면 정부 API 최근 3개월 조회 후 D1에 저장
-    if (result.results.length === 0) {
+    if (!fromCache) {
       const location = await getCityAndDistrict(env, lawdCd)
       if (location) {
         const trades = await fetchRecentTrades(lawdCd, 3)
@@ -223,7 +229,7 @@ router.get('/api/regions/apartments', async (request, env) => {
       {
         headers: {
           ...CORS_HEADERS,
-          'Cache-Control': 'no-cache'
+          'Cache-Control': fromCache ? 'public, max-age=86400' : 'no-cache'
         }
       }
     )
@@ -264,8 +270,10 @@ router.get('/api/regions/areas', async (request, env) => {
        ORDER BY CAST(area AS REAL)`
     ).bind(lawdCd, dongName, aptName).all()
 
+    let fromCache = result.results.length > 0
+
     // 2. D1에 데이터 없으면 정부 API 최근 3개월 조회 후 D1에 저장
-    if (result.results.length === 0) {
+    if (!fromCache) {
       const location = await getCityAndDistrict(env, lawdCd)
       if (location) {
         const trades = await fetchRecentTrades(lawdCd, 3)
@@ -294,7 +302,7 @@ router.get('/api/regions/areas', async (request, env) => {
       {
         headers: {
           ...CORS_HEADERS,
-          'Cache-Control': 'no-cache'
+          'Cache-Control': fromCache ? 'public, max-age=86400' : 'no-cache'
         }
       }
     )

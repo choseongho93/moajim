@@ -1,15 +1,6 @@
 import { useState } from 'react'
-
-type DonorType = 'spouse' | 'ascendant' | 'descendant' | 'relative' | 'other'
-
-interface GiftTaxResult {
-  giftAmount: number
-  deduction: number
-  taxBase: number
-  taxRate: number
-  progressiveDeduction: number
-  calculatedTax: number
-}
+import { calculateGiftTax, type DonorType, type GiftTaxResult } from '../utils/giftTax'
+import { calculateInheritanceTax, type InheritanceTabType, type InheritanceTaxResult } from '../utils/inheritanceTax'
 
 interface CalculatorPageProps {
   initialSubView?: string
@@ -102,6 +93,9 @@ function GiftTaxCalculator() {
   const [donorType, setDonorType] = useState<DonorType>('spouse')
   const [giftAmount, setGiftAmount] = useState<number>(0)
   const [isMinor, setIsMinor] = useState(false)
+  const [isGenerationSkip, setIsGenerationSkip] = useState(false)
+  const [isMarriageGift, setIsMarriageGift] = useState(false)
+  const [marriageGiftAmount, setMarriageGiftAmount] = useState<number>(0)
 
   // 추가 입력 필드 (체크박스)
   const [hasAppraisalFee, setHasAppraisalFee] = useState(false)
@@ -118,52 +112,20 @@ function GiftTaxCalculator() {
 
   const [result, setResult] = useState<GiftTaxResult | null>(null)
 
-  // 증여재산공제액 계산
-  const getDeduction = (type: DonorType, isMinor: boolean): number => {
-    switch (type) {
-      case 'spouse':
-        return 60000 // 6억
-      case 'ascendant':
-        return isMinor ? 2000 : 5000 // 미성년자 2천만원, 성인 5천만원
-      case 'descendant':
-        return 5000 // 5천만원
-      case 'relative':
-        return 1000 // 1천만원
-      case 'other':
-        return 0
-      default:
-        return 0
-    }
-  }
-
-  // 증여세율 계산
-  const calculateTax = (taxBase: number): { rate: number; progressiveDeduction: number; tax: number } => {
-    if (taxBase <= 10000) {
-      return { rate: 10, progressiveDeduction: 0, tax: taxBase * 0.1 }
-    } else if (taxBase <= 50000) {
-      return { rate: 20, progressiveDeduction: 1000, tax: taxBase * 0.2 - 1000 }
-    } else if (taxBase <= 100000) {
-      return { rate: 30, progressiveDeduction: 6000, tax: taxBase * 0.3 - 6000 }
-    } else if (taxBase <= 300000) {
-      return { rate: 40, progressiveDeduction: 16000, tax: taxBase * 0.4 - 16000 }
-    } else {
-      return { rate: 50, progressiveDeduction: 46000, tax: taxBase * 0.5 - 46000 }
-    }
-  }
-
   const handleCalculate = () => {
-    const deduction = getDeduction(donorType, isMinor)
-    const taxBase = Math.max(0, giftAmount - deduction)
-    const { rate, progressiveDeduction, tax } = calculateTax(taxBase)
-
-    setResult({
+    setResult(calculateGiftTax({
       giftAmount,
-      deduction,
-      taxBase,
-      taxRate: rate,
-      progressiveDeduction,
-      calculatedTax: Math.max(0, tax),
-    })
+      donorType,
+      isMinor,
+      isGenerationSkip,
+      isMarriageGift,
+      marriageGiftAmount,
+      debtAmount: hasDebt ? debtAmount : 0,
+      taxExemptAmount: hasTaxExempt ? taxExemptAmount : 0,
+      appraisalFee: hasAppraisalFee ? appraisalFee : 0,
+      pastGiftAmount: hasPastGift ? pastGiftAmount : 0,
+      giftTaxPaid: hasTaxPayment ? giftTaxPaid : 0,
+    }))
   }
 
   return (
@@ -270,21 +232,6 @@ function GiftTaxCalculator() {
               </div>
             </div>
 
-            {/* 미성년자 체크 */}
-            {donorType === 'ascendant' && (
-              <div>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={isMinor}
-                    onChange={(e) => setIsMinor(e.target.checked)}
-                    className="w-4 h-4 text-[#F15F5F] rounded focus:ring-[#F15F5F]"
-                  />
-                  <span className="text-sm text-gray-700">미성년자 (공제액 2천만원)</span>
-                </label>
-              </div>
-            )}
-
             {/* 증여재산 금액 입력 */}
             <div>
               <label className="block text-sm font-bold text-gray-900 mb-3">
@@ -304,76 +251,89 @@ function GiftTaxCalculator() {
               </div>
             </div>
 
-            {/* 추가 옵션 체크박스 */}
-            <div className="space-y-3 py-4 border-t border-gray-200">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={hasAppraisalFee}
-                  onChange={(e) => setHasAppraisalFee(e.target.checked)}
-                  className="w-4 h-4 text-[#F15F5F] rounded focus:ring-[#F15F5F]"
-                />
-                <span className="text-sm text-gray-700">감정평가수수료</span>
-              </label>
+            {/* 직계존속 전용 옵션 */}
+            {donorType === 'ascendant' && (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-3">
+                <p className="text-xs font-bold text-amber-700 tracking-wide mb-2">직계존속 증여 특수 항목</p>
 
-              {hasAppraisalFee && (
-                <div className="ml-6 relative">
+                <label className="flex items-center gap-3 cursor-pointer">
                   <input
-                    type="number"
-                    value={appraisalFee || ''}
-                    onChange={(e) => setAppraisalFee(Number(e.target.value))}
-                    className="w-full px-4 py-3 pr-16 rounded-lg border-2 border-gray-200 focus:border-[#F15F5F] focus:outline-none"
-                    placeholder="금액 입력"
+                    type="checkbox"
+                    checked={isGenerationSkip}
+                    onChange={(e) => setIsGenerationSkip(e.target.checked)}
+                    className="w-4 h-4 text-[#F15F5F] rounded focus:ring-[#F15F5F]"
                   />
-                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-medium">
-                    만원
-                  </span>
-                </div>
-              )}
+                  <div>
+                    <span className="text-sm text-gray-800 font-medium">세대생략 증여</span>
+                    <span className="text-xs text-amber-600 ml-2">할증 30%</span>
+                  </div>
+                </label>
 
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={hasTaxExempt}
-                  onChange={(e) => setHasTaxExempt(e.target.checked)}
-                  className="w-4 h-4 text-[#F15F5F] rounded focus:ring-[#F15F5F]"
-                />
-                <span className="text-sm text-gray-700">비과세액 등</span>
-              </label>
-
-              {hasTaxExempt && (
-                <div className="ml-6 relative">
+                <label className="flex items-center gap-3 cursor-pointer">
                   <input
-                    type="number"
-                    value={taxExemptAmount || ''}
-                    onChange={(e) => setTaxExemptAmount(Number(e.target.value))}
-                    className="w-full px-4 py-3 pr-16 rounded-lg border-2 border-gray-200 focus:border-[#F15F5F] focus:outline-none"
-                    placeholder="금액 입력"
+                    type="checkbox"
+                    checked={isMinor}
+                    onChange={(e) => setIsMinor(e.target.checked)}
+                    className="w-4 h-4 text-[#F15F5F] rounded focus:ring-[#F15F5F]"
                   />
-                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-medium">
-                    만원
-                  </span>
-                </div>
-              )}
+                  <div>
+                    <span className="text-sm text-gray-800 font-medium">수증자가 미성년자</span>
+                    <span className="text-xs text-gray-500 ml-2">공제 2천만원 적용</span>
+                  </div>
+                </label>
 
-              <label className="flex items-center gap-2 cursor-pointer">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={isMarriageGift}
+                    onChange={(e) => setIsMarriageGift(e.target.checked)}
+                    className="w-4 h-4 text-[#F15F5F] rounded focus:ring-[#F15F5F]"
+                  />
+                  <div>
+                    <span className="text-sm text-gray-800 font-medium">결혼·출산 증여공제</span>
+                    <span className="text-xs text-amber-600 ml-2">추가 1억원 공제</span>
+                  </div>
+                </label>
+
+                {isMarriageGift && (
+                  <div className="ml-7 relative">
+                    <input
+                      type="number"
+                      value={marriageGiftAmount || ''}
+                      onChange={(e) => setMarriageGiftAmount(Number(e.target.value))}
+                      className="w-full px-4 py-3 pr-16 rounded-lg border-2 border-amber-200 focus:border-[#F15F5F] focus:outline-none text-sm"
+                      placeholder="결혼·출산 증여 금액"
+                    />
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-medium">
+                      만원
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* 공제·차감 항목 */}
+            <div className="space-y-3 pt-4 border-t border-gray-200">
+              <p className="text-xs font-bold text-gray-500 tracking-wide">공제·차감 항목</p>
+
+              <label className="flex items-center gap-3 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={hasDebt}
                   onChange={(e) => setHasDebt(e.target.checked)}
                   className="w-4 h-4 text-[#F15F5F] rounded focus:ring-[#F15F5F]"
                 />
-                <span className="text-sm text-gray-700">부채부담액</span>
+                <span className="text-sm text-gray-700">증여재산에 담보된 채무 인수액</span>
               </label>
 
               {hasDebt && (
-                <div className="ml-6 relative">
+                <div className="ml-7 relative">
                   <input
                     type="number"
                     value={debtAmount || ''}
                     onChange={(e) => setDebtAmount(Number(e.target.value))}
                     className="w-full px-4 py-3 pr-16 rounded-lg border-2 border-gray-200 focus:border-[#F15F5F] focus:outline-none"
-                    placeholder="금액 입력"
+                    placeholder="인수한 채무 금액"
                   />
                   <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-medium">
                     만원
@@ -381,24 +341,79 @@ function GiftTaxCalculator() {
                 </div>
               )}
 
-              <label className="flex items-center gap-2 cursor-pointer">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={hasTaxExempt}
+                  onChange={(e) => setHasTaxExempt(e.target.checked)}
+                  className="w-4 h-4 text-[#F15F5F] rounded focus:ring-[#F15F5F]"
+                />
+                <span className="text-sm text-gray-700">비과세·과세불산입액</span>
+              </label>
+
+              {hasTaxExempt && (
+                <div className="ml-7 relative">
+                  <input
+                    type="number"
+                    value={taxExemptAmount || ''}
+                    onChange={(e) => setTaxExemptAmount(Number(e.target.value))}
+                    className="w-full px-4 py-3 pr-16 rounded-lg border-2 border-gray-200 focus:border-[#F15F5F] focus:outline-none"
+                    placeholder="비과세 해당 금액"
+                  />
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-medium">
+                    만원
+                  </span>
+                </div>
+              )}
+
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={hasAppraisalFee}
+                  onChange={(e) => setHasAppraisalFee(e.target.checked)}
+                  className="w-4 h-4 text-[#F15F5F] rounded focus:ring-[#F15F5F]"
+                />
+                <span className="text-sm text-gray-700">감정평가 수수료 공제</span>
+              </label>
+
+              {hasAppraisalFee && (
+                <div className="ml-7 relative">
+                  <input
+                    type="number"
+                    value={appraisalFee || ''}
+                    onChange={(e) => setAppraisalFee(Number(e.target.value))}
+                    className="w-full px-4 py-3 pr-16 rounded-lg border-2 border-gray-200 focus:border-[#F15F5F] focus:outline-none"
+                    placeholder="감정평가 수수료"
+                  />
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-medium">
+                    만원
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* 기신고·납부 항목 */}
+            <div className="space-y-3 pt-4 border-t border-gray-200">
+              <p className="text-xs font-bold text-gray-500 tracking-wide">기신고·납부 항목</p>
+
+              <label className="flex items-center gap-3 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={hasPastGift}
                   onChange={(e) => setHasPastGift(e.target.checked)}
                   className="w-4 h-4 text-[#F15F5F] rounded focus:ring-[#F15F5F]"
                 />
-                <span className="text-sm text-gray-700">과거 10년 동일인 증여</span>
+                <span className="text-sm text-gray-700">10년 내 동일인으로부터 사전증여</span>
               </label>
 
               {hasPastGift && (
-                <div className="ml-6 relative">
+                <div className="ml-7 relative">
                   <input
                     type="number"
                     value={pastGiftAmount || ''}
                     onChange={(e) => setPastGiftAmount(Number(e.target.value))}
                     className="w-full px-4 py-3 pr-16 rounded-lg border-2 border-gray-200 focus:border-[#F15F5F] focus:outline-none"
-                    placeholder="금액 입력"
+                    placeholder="사전증여 재산가액 합계"
                   />
                   <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-medium">
                     만원
@@ -406,24 +421,24 @@ function GiftTaxCalculator() {
                 </div>
               )}
 
-              <label className="flex items-center gap-2 cursor-pointer">
+              <label className="flex items-center gap-3 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={hasTaxPayment}
                   onChange={(e) => setHasTaxPayment(e.target.checked)}
                   className="w-4 h-4 text-[#F15F5F] rounded focus:ring-[#F15F5F]"
                 />
-                <span className="text-sm text-gray-700">세금 대납</span>
+                <span className="text-sm text-gray-700">증여세 기납부세액 (대납 포함)</span>
               </label>
 
               {hasTaxPayment && (
-                <div className="ml-6 relative">
+                <div className="ml-7 relative">
                   <input
                     type="number"
                     value={giftTaxPaid || ''}
                     onChange={(e) => setGiftTaxPaid(Number(e.target.value))}
                     className="w-full px-4 py-3 pr-16 rounded-lg border-2 border-gray-200 focus:border-[#F15F5F] focus:outline-none"
-                    placeholder="금액 입력"
+                    placeholder="이미 납부한 증여세액"
                   />
                   <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-medium">
                     만원
@@ -447,22 +462,57 @@ function GiftTaxCalculator() {
                   <div className="text-center mb-6">
                     <p className="text-sm text-gray-600 mb-2">예상 증여세</p>
                     <p className="text-4xl font-bold text-[#F15F5F]">
-                      {result.calculatedTax.toLocaleString()}만원
+                      {result.finalTax.toLocaleString()}만원
                     </p>
                     <p className="text-sm text-gray-500 mt-1">
-                      ({(result.calculatedTax * 10000).toLocaleString()}원)
+                      ({(result.finalTax * 10000).toLocaleString()}원)
                     </p>
                   </div>
 
                   <div className="space-y-3 border-t border-red-200 pt-4">
+                    {/* 증여세과세가액 산출 */}
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">증여재산 가액</span>
                       <span className="font-medium">{result.giftAmount.toLocaleString()}만원</span>
                     </div>
+                    {result.debtAmount > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">채무 인수액</span>
+                        <span className="font-medium text-[#F15F5F]">-{result.debtAmount.toLocaleString()}만원</span>
+                      </div>
+                    )}
+                    {result.taxExemptAmount > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">비과세·과세불산입</span>
+                        <span className="font-medium text-[#F15F5F]">-{result.taxExemptAmount.toLocaleString()}만원</span>
+                      </div>
+                    )}
+                    {result.pastGiftAmount > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">사전증여 가산</span>
+                        <span className="font-medium">+{result.pastGiftAmount.toLocaleString()}만원</span>
+                      </div>
+                    )}
+
+                    {/* 공제 */}
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">증여재산공제</span>
-                      <span className="font-medium text-[#F15F5F]">-{result.deduction.toLocaleString()}만원</span>
+                      <span className="font-medium text-[#F15F5F]">-{result.personalDeduction.toLocaleString()}만원</span>
                     </div>
+                    {result.marriageDeduction > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">결혼·출산 공제</span>
+                        <span className="font-medium text-[#F15F5F]">-{result.marriageDeduction.toLocaleString()}만원</span>
+                      </div>
+                    )}
+                    {result.appraisalFee > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">감정평가 수수료</span>
+                        <span className="font-medium text-[#F15F5F]">-{result.appraisalFee.toLocaleString()}만원</span>
+                      </div>
+                    )}
+
+                    {/* 과세표준·세율 */}
                     <div className="flex justify-between text-sm font-bold border-t border-red-200 pt-3">
                       <span className="text-gray-900">과세표준</span>
                       <span>{result.taxBase.toLocaleString()}만원</span>
@@ -474,6 +524,28 @@ function GiftTaxCalculator() {
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">누진공제</span>
                       <span className="font-medium text-[#F15F5F]">-{result.progressiveDeduction.toLocaleString()}만원</span>
+                    </div>
+
+                    {/* 산출세액·공제 */}
+                    <div className="flex justify-between text-sm font-bold border-t border-red-200 pt-3">
+                      <span className="text-gray-900">산출세액</span>
+                      <span>{result.calculatedTax.toLocaleString()}만원</span>
+                    </div>
+                    {result.generationSkipSurcharge > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">세대생략 할증 (30%)</span>
+                        <span className="font-medium">포함</span>
+                      </div>
+                    )}
+                    {result.giftTaxPaid > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">기납부세액</span>
+                        <span className="font-medium text-[#F15F5F]">-{result.giftTaxPaid.toLocaleString()}만원</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">신고세액공제 (3%)</span>
+                      <span className="font-medium text-[#F15F5F]">-{result.filingDeduction.toLocaleString()}만원</span>
                     </div>
                   </div>
                 </div>
@@ -575,11 +647,20 @@ function GiftTaxCalculator() {
 
 // 상속세 계산기
 function InheritanceTaxCalculator() {
-  const [activeTab, setActiveTab] = useState<'explanation' | 'spouse' | 'deduction'>('spouse')
+  const [activeTab, setActiveTab] = useState<InheritanceTabType>('spouse-simple')
 
   // 상속 정보
   const [inheritanceAmount, setInheritanceAmount] = useState<number>(0)
   const [funeralExpense, setFuneralExpense] = useState<number>(0)
+  const [spouseInheritance, setSpouseInheritance] = useState<number>(0)
+
+  // 상속인 수
+  const [descendantCount, setDescendantCount] = useState<number>(0)
+  const [ascendantCount, setAscendantCount] = useState<number>(0)
+  const [childrenCount, setChildrenCount] = useState<number>(0)
+  const [elderlyCount, setElderlyCount] = useState<number>(0)
+  const [minorCount, setMinorCount] = useState<number>(0)
+  const [disabledCount, setDisabledCount] = useState<number>(0)
 
   // 체크박스 옵션
   const [use2024Reform, setUse2024Reform] = useState(false)
@@ -595,9 +676,50 @@ function InheritanceTaxCalculator() {
   const [generationSkipAmount, setGenerationSkipAmount] = useState<number>(0)
   const [debtAmount, setDebtAmount] = useState<number>(0)
   const [appraisalFee, setAppraisalFee] = useState<number>(0)
-  const [residenceValue, setResidenceValue] = useState<number>(0)
+  const [residenceDeduction, setResidenceDeduction] = useState<number>(0)
   const [financialAmount, setFinancialAmount] = useState<number>(0)
   const [pastGiftAmount, setPastGiftAmount] = useState<number>(0)
+
+  const [result, setResult] = useState<InheritanceTaxResult | null>(null)
+
+  const handleCalculate = () => {
+    setResult(calculateInheritanceTax({
+      tabType: activeTab,
+      inheritanceAmount,
+      funeralExpense,
+      spouseInheritance: activeTab !== 'no-spouse' ? spouseInheritance : 0,
+      descendantCount: activeTab !== 'no-spouse' ? descendantCount : 0,
+      ascendantCount: activeTab !== 'no-spouse' ? ascendantCount : 0,
+      childrenCount: activeTab !== 'spouse-simple' ? childrenCount : 0,
+      elderlyCount: activeTab !== 'spouse-simple' ? elderlyCount : 0,
+      minorCount: activeTab !== 'spouse-simple' ? minorCount : 0,
+      disabledCount: activeTab !== 'spouse-simple' ? disabledCount : 0,
+      use2024Reform,
+      isGenerationSkip,
+      generationSkipAmount: isGenerationSkip ? generationSkipAmount : 0,
+      isMinorHeir,
+      hasDebt,
+      debtAmount,
+      hasAppraisal,
+      appraisalFee,
+      hasResidence,
+      residenceDeduction,
+      hasFinancial,
+      financialAmount,
+      hasPastGift,
+      pastGiftAmount,
+    }))
+  }
+
+  const tabStyle = (tab: InheritanceTabType) =>
+    `px-3 sm:px-4 py-2 sm:py-3 font-medium transition-colors whitespace-nowrap text-sm sm:text-base ${
+      activeTab === tab
+        ? 'text-[#F15F5F] border-b-2 border-[#F15F5F]'
+        : 'text-gray-500 hover:text-gray-700'
+    }`
+
+  const showSpouseFields = activeTab !== 'no-spouse'
+  const showPersonalFields = activeTab !== 'spouse-simple'
 
   return (
     <div className="min-h-screen bg-white py-6 sm:py-12 px-4 sm:px-6">
@@ -620,358 +742,549 @@ function InheritanceTaxCalculator() {
 
         {/* 탭 */}
         <div className="flex gap-1 sm:gap-2 mb-6 sm:mb-8 border-b border-gray-200 overflow-x-auto">
-          <button
-            onClick={() => setActiveTab('explanation')}
-            className={`px-3 sm:px-4 py-2 sm:py-3 font-medium transition-colors whitespace-nowrap text-sm sm:text-base ${
-              activeTab === 'explanation'
-                ? 'text-[#F15F5F] border-b-2 border-[#F15F5F]'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            설명
+          <button onClick={() => { setActiveTab('spouse-simple'); setResult(null) }} className={tabStyle('spouse-simple')}>
+            배우자 유
           </button>
-          <button
-            onClick={() => setActiveTab('spouse')}
-            className={`px-3 sm:px-4 py-2 sm:py-3 font-medium transition-colors whitespace-nowrap text-sm sm:text-base ${
-              activeTab === 'spouse'
-                ? 'text-[#F15F5F] border-b-2 border-[#F15F5F]'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            배우자 공제
+          <button onClick={() => { setActiveTab('spouse-detail'); setResult(null) }} className={tabStyle('spouse-detail')}>
+            배우자 유(상속)
           </button>
-          <button
-            onClick={() => setActiveTab('deduction')}
-            className={`px-3 sm:px-4 py-2 sm:py-3 font-medium transition-colors whitespace-nowrap text-sm sm:text-base ${
-              activeTab === 'deduction'
-                ? 'text-[#F15F5F] border-b-2 border-[#F15F5F]'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            인적/일괄 공제
+          <button onClick={() => { setActiveTab('no-spouse'); setResult(null) }} className={tabStyle('no-spouse')}>
+            배우자 무
           </button>
         </div>
 
-        {/* 설명 탭 */}
-        {activeTab === 'explanation' && (
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
-            <p className="text-gray-700 leading-relaxed mb-3">
-              사망에 따른 재산 상속 시 부과되는 조세를 계산합니다.
+        {/* 안내 문구 */}
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-6">
+          {activeTab === 'spouse-simple' && (
+            <p className="text-sm text-gray-700 leading-relaxed">
+              배우자가 있지만 상속을 받지 않거나 5억원 이하로 상속받는 경우에 사용합니다.
+              배우자공제 5억원 + 일괄공제 5억원이 자동 적용됩니다.
             </p>
-            <p className="text-sm text-gray-600">
-              상단의 "배우자 공제"와 "인적/일괄공제"에 대한 설명을 꼭 읽어주시기 바랍니다.
+          )}
+          {activeTab === 'spouse-detail' && (
+            <p className="text-sm text-gray-700 leading-relaxed">
+              배우자가 실제로 5억원 이상 상속받는 경우, 법정상속분에 따라 배우자공제를 정확히 계산합니다.
+              배우자 실제 상속액과 직계비속/존속 수를 입력해주세요.
             </p>
-          </div>
-        )}
+          )}
+          {activeTab === 'no-spouse' && (
+            <p className="text-sm text-gray-700 leading-relaxed">
+              배우자가 없는 경우입니다. 배우자공제가 적용되지 않으며, 일괄공제(5억) 또는 기초공제+인적공제 중 큰 금액이 적용됩니다.
+            </p>
+          )}
+        </div>
 
-        {/* 배우자 공제 탭 */}
-        {activeTab === 'spouse' && (
-          <div className="space-y-6">
-            {/* 안내 문구 */}
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
-              <p className="text-sm text-gray-700 leading-relaxed">
-                배우자가 있는 경우, 배우자가 상속을 받지 않더라도 기본적으로 5억원을 공제 받을 수 있습니다.
-                배우자가 직접 상속을 받는 경우엔 최대 30억원까지 공제를 받을 수 있습니다.
-              </p>
-              <p className="text-sm text-gray-700 leading-relaxed mt-3">
-                배우자가 상속을 받지 않거나 5억원 이하로 상속 받는 경우엔 "배우자 유"를 선택하면 간단히 계산할 수 있습니다.
-                배우자가 실제로 5억원 이상의 금액을 상속받는 경우엔 좀 더 복잡한 계산이 필요하므로 "배우자 유(상속)"을 클릭하십시오.
-              </p>
-            </div>
+        <div className="space-y-6">
+          {/* 옵션 체크박스 */}
+          <div className="space-y-3 py-4 border-t border-gray-200">
+            <p className="text-xs font-bold text-gray-500 tracking-wide">옵션</p>
 
-            {/* 옵션 체크박스 */}
-            <div className="space-y-3 py-4">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={use2024Reform}
-                  onChange={(e) => setUse2024Reform(e.target.checked)}
-                  className="w-4 h-4 text-[#F15F5F] rounded focus:ring-[#F15F5F]"
-                />
-                <span className="text-sm text-gray-700">2024 세법개정안 미리 적용</span>
-              </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={use2024Reform}
+                onChange={(e) => setUse2024Reform(e.target.checked)}
+                className="w-4 h-4 text-[#F15F5F] rounded focus:ring-[#F15F5F]"
+              />
+              <span className="text-sm text-gray-700">2024 세법개정안 미리 적용</span>
+            </label>
 
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={isGenerationSkip}
-                  onChange={(e) => setIsGenerationSkip(e.target.checked)}
-                  className="w-4 h-4 text-[#F15F5F] rounded focus:ring-[#F15F5F]"
-                />
-                <span className="text-sm text-gray-700">세대를 건너뛴 상속</span>
-              </label>
-
-              {isGenerationSkip && (
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={isGenerationSkip}
+                onChange={(e) => setIsGenerationSkip(e.target.checked)}
+                className="w-4 h-4 text-[#F15F5F] rounded focus:ring-[#F15F5F]"
+              />
+              <span className="text-sm text-gray-700">세대를 건너뛴 상속</span>
+            </label>
+            {isGenerationSkip && (
+              <>
                 <div className="ml-6 relative">
                   <input
                     type="number"
                     value={generationSkipAmount || ''}
                     onChange={(e) => setGenerationSkipAmount(Number(e.target.value))}
                     className="w-full px-4 py-3 pr-16 rounded-lg border-2 border-gray-200 focus:border-[#F15F5F] focus:outline-none"
-                    placeholder="금액 입력"
+                    placeholder="세대생략 상속액"
                   />
-                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-medium">
-                    만원
-                  </span>
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-medium">만원</span>
                 </div>
-              )}
-
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={isMinorHeir}
-                  onChange={(e) => setIsMinorHeir(e.target.checked)}
-                  className="w-4 h-4 text-[#F15F5F] rounded focus:ring-[#F15F5F]"
-                />
-                <span className="text-sm text-gray-700">상속자 미성년자 여부</span>
-              </label>
-
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={hasDebt}
-                  onChange={(e) => setHasDebt(e.target.checked)}
-                  className="w-4 h-4 text-[#F15F5F] rounded focus:ring-[#F15F5F]"
-                />
-                <span className="text-sm text-gray-700">채무상속</span>
-              </label>
-
-              {hasDebt && (
-                <div className="ml-6 relative">
+                <label className="ml-6 flex items-center gap-2 cursor-pointer">
                   <input
-                    type="number"
-                    value={debtAmount || ''}
-                    onChange={(e) => setDebtAmount(Number(e.target.value))}
-                    className="w-full px-4 py-3 pr-16 rounded-lg border-2 border-gray-200 focus:border-[#F15F5F] focus:outline-none"
-                    placeholder="금액 입력"
+                    type="checkbox"
+                    checked={isMinorHeir}
+                    onChange={(e) => setIsMinorHeir(e.target.checked)}
+                    className="w-4 h-4 text-[#F15F5F] rounded focus:ring-[#F15F5F]"
                   />
-                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-medium">
-                    만원
-                  </span>
-                </div>
-              )}
+                  <span className="text-sm text-gray-700">상속자 미성년자 여부 <span className="text-xs text-gray-500">(할증 40%, 그 외 30%)</span></span>
+                </label>
+              </>
+            )}
 
-              <label className="flex items-center gap-2 cursor-pointer">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={hasDebt}
+                onChange={(e) => setHasDebt(e.target.checked)}
+                className="w-4 h-4 text-[#F15F5F] rounded focus:ring-[#F15F5F]"
+              />
+              <span className="text-sm text-gray-700">채무상속</span>
+            </label>
+            {hasDebt && (
+              <div className="ml-6 relative">
                 <input
-                  type="checkbox"
-                  checked={hasAppraisal}
-                  onChange={(e) => setHasAppraisal(e.target.checked)}
-                  className="w-4 h-4 text-[#F15F5F] rounded focus:ring-[#F15F5F]"
+                  type="number"
+                  value={debtAmount || ''}
+                  onChange={(e) => setDebtAmount(Number(e.target.value))}
+                  className="w-full px-4 py-3 pr-16 rounded-lg border-2 border-gray-200 focus:border-[#F15F5F] focus:outline-none"
+                  placeholder="채무 금액"
                 />
-                <span className="text-sm text-gray-700">감정평가 수수료</span>
-              </label>
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-medium">만원</span>
+              </div>
+            )}
 
-              {hasAppraisal && (
-                <div className="ml-6 relative">
-                  <input
-                    type="number"
-                    value={appraisalFee || ''}
-                    onChange={(e) => setAppraisalFee(Number(e.target.value))}
-                    className="w-full px-4 py-3 pr-16 rounded-lg border-2 border-gray-200 focus:border-[#F15F5F] focus:outline-none"
-                    placeholder="금액 입력"
-                  />
-                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-medium">
-                    만원
-                  </span>
-                </div>
-              )}
-
-              <label className="flex items-center gap-2 cursor-pointer">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={hasAppraisal}
+                onChange={(e) => setHasAppraisal(e.target.checked)}
+                className="w-4 h-4 text-[#F15F5F] rounded focus:ring-[#F15F5F]"
+              />
+              <span className="text-sm text-gray-700">감정평가 수수료</span>
+            </label>
+            {hasAppraisal && (
+              <div className="ml-6 relative">
                 <input
-                  type="checkbox"
-                  checked={hasResidence}
-                  onChange={(e) => setHasResidence(e.target.checked)}
-                  className="w-4 h-4 text-[#F15F5F] rounded focus:ring-[#F15F5F]"
+                  type="number"
+                  value={appraisalFee || ''}
+                  onChange={(e) => setAppraisalFee(Number(e.target.value))}
+                  className="w-full px-4 py-3 pr-16 rounded-lg border-2 border-gray-200 focus:border-[#F15F5F] focus:outline-none"
+                  placeholder="수수료 금액"
                 />
-                <span className="text-sm text-gray-700">동거주택 공제</span>
-              </label>
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-medium">만원</span>
+              </div>
+            )}
 
-              {hasResidence && (
-                <div className="ml-6 relative">
-                  <input
-                    type="number"
-                    value={residenceValue || ''}
-                    onChange={(e) => setResidenceValue(Number(e.target.value))}
-                    className="w-full px-4 py-3 pr-16 rounded-lg border-2 border-gray-200 focus:border-[#F15F5F] focus:outline-none"
-                    placeholder="금액 입력"
-                  />
-                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-medium">
-                    만원
-                  </span>
-                </div>
-              )}
-
-              <label className="flex items-center gap-2 cursor-pointer">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={hasResidence}
+                onChange={(e) => setHasResidence(e.target.checked)}
+                className="w-4 h-4 text-[#F15F5F] rounded focus:ring-[#F15F5F]"
+              />
+              <span className="text-sm text-gray-700">동거주택 공제</span>
+            </label>
+            {hasResidence && (
+              <div className="ml-6 relative">
                 <input
-                  type="checkbox"
-                  checked={hasFinancial}
-                  onChange={(e) => setHasFinancial(e.target.checked)}
-                  className="w-4 h-4 text-[#F15F5F] rounded focus:ring-[#F15F5F]"
+                  type="number"
+                  value={residenceDeduction || ''}
+                  onChange={(e) => setResidenceDeduction(Number(e.target.value))}
+                  className="w-full px-4 py-3 pr-16 rounded-lg border-2 border-gray-200 focus:border-[#F15F5F] focus:outline-none"
+                  placeholder="공제 금액"
                 />
-                <span className="text-sm text-gray-700">금융재산 공제</span>
-              </label>
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-medium">만원</span>
+              </div>
+            )}
 
-              {hasFinancial && (
-                <div className="ml-6 relative">
-                  <input
-                    type="number"
-                    value={financialAmount || ''}
-                    onChange={(e) => setFinancialAmount(Number(e.target.value))}
-                    className="w-full px-4 py-3 pr-16 rounded-lg border-2 border-gray-200 focus:border-[#F15F5F] focus:outline-none"
-                    placeholder="금액 입력"
-                  />
-                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-medium">
-                    만원
-                  </span>
-                </div>
-              )}
-
-              <label className="flex items-center gap-2 cursor-pointer">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={hasFinancial}
+                onChange={(e) => setHasFinancial(e.target.checked)}
+                className="w-4 h-4 text-[#F15F5F] rounded focus:ring-[#F15F5F]"
+              />
+              <span className="text-sm text-gray-700">금융재산 공제</span>
+            </label>
+            {hasFinancial && (
+              <div className="ml-6 relative">
                 <input
-                  type="checkbox"
-                  checked={hasPastGift}
-                  onChange={(e) => setHasPastGift(e.target.checked)}
-                  className="w-4 h-4 text-[#F15F5F] rounded focus:ring-[#F15F5F]"
+                  type="number"
+                  value={financialAmount || ''}
+                  onChange={(e) => setFinancialAmount(Number(e.target.value))}
+                  className="w-full px-4 py-3 pr-16 rounded-lg border-2 border-gray-200 focus:border-[#F15F5F] focus:outline-none"
+                  placeholder="금융재산 금액"
                 />
-                <span className="text-sm text-gray-700">과거 5년 증여 존재</span>
-              </label>
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-medium">만원</span>
+              </div>
+            )}
 
-              {hasPastGift && (
-                <div className="ml-6 relative">
-                  <input
-                    type="number"
-                    value={pastGiftAmount || ''}
-                    onChange={(e) => setPastGiftAmount(Number(e.target.value))}
-                    className="w-full px-4 py-3 pr-16 rounded-lg border-2 border-gray-200 focus:border-[#F15F5F] focus:outline-none"
-                    placeholder="금액 입력"
-                  />
-                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-medium">
-                    만원
-                  </span>
-                </div>
-              )}
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={hasPastGift}
+                onChange={(e) => setHasPastGift(e.target.checked)}
+                className="w-4 h-4 text-[#F15F5F] rounded focus:ring-[#F15F5F]"
+              />
+              <span className="text-sm text-gray-700">과거 5년 증여</span>
+            </label>
+            {hasPastGift && (
+              <div className="ml-6 relative">
+                <input
+                  type="number"
+                  value={pastGiftAmount || ''}
+                  onChange={(e) => setPastGiftAmount(Number(e.target.value))}
+                  className="w-full px-4 py-3 pr-16 rounded-lg border-2 border-gray-200 focus:border-[#F15F5F] focus:outline-none"
+                  placeholder="증여 금액"
+                />
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-medium">만원</span>
+              </div>
+            )}
+          </div>
+
+          {/* 상속재산 입력 */}
+          <div>
+            <label className="block text-sm font-bold text-gray-900 mb-3">상속재산</label>
+            <div className="relative">
+              <input
+                type="number"
+                value={inheritanceAmount || ''}
+                onChange={(e) => setInheritanceAmount(Number(e.target.value))}
+                className="w-full px-4 py-4 pr-16 rounded-xl border-2 border-gray-200 focus:border-[#F15F5F] focus:outline-none text-lg"
+                placeholder="금액 입력"
+              />
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">만원</span>
             </div>
+          </div>
 
-            {/* 상속재산 입력 */}
+          {/* 장례비용 */}
+          <div>
+            <label className="block text-sm font-bold text-gray-900 mb-3">
+              장례비용 등
+            </label>
+            <div className="relative">
+              <input
+                type="number"
+                value={funeralExpense || ''}
+                onChange={(e) => setFuneralExpense(Number(e.target.value))}
+                className="w-full px-4 py-4 pr-16 rounded-xl border-2 border-gray-200 focus:border-[#F15F5F] focus:outline-none text-lg"
+                placeholder="금액 입력"
+              />
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">만원</span>
+            </div>
+          </div>
+
+          {/* 배우자 상속액 (배우자 유 탭만) */}
+          {showSpouseFields && activeTab === 'spouse-detail' && (
             <div>
-              <label className="block text-sm font-bold text-gray-900 mb-3">
-                상속재산
-              </label>
+              <label className="block text-sm font-bold text-gray-900 mb-3">배우자 실제 상속액</label>
               <div className="relative">
                 <input
                   type="number"
-                  value={inheritanceAmount || ''}
-                  onChange={(e) => setInheritanceAmount(Number(e.target.value))}
+                  value={spouseInheritance || ''}
+                  onChange={(e) => setSpouseInheritance(Number(e.target.value))}
                   className="w-full px-4 py-4 pr-16 rounded-xl border-2 border-gray-200 focus:border-[#F15F5F] focus:outline-none text-lg"
                   placeholder="금액 입력"
                 />
-                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">
-                  만원
-                </span>
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">만원</span>
               </div>
             </div>
+          )}
 
-            {/* 장례비용 입력 */}
-            <div>
-              <label className="block text-sm font-bold text-gray-900 mb-3">
-                장례비용 등
-              </label>
-              <div className="relative">
+          {/* 직계비속/존속 수 (배우자 유 탭만) */}
+          {showSpouseFields && (
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-bold text-gray-900 mb-3">직계비속 (명)</label>
                 <input
                   type="number"
-                  value={funeralExpense || ''}
-                  onChange={(e) => setFuneralExpense(Number(e.target.value))}
-                  className="w-full px-4 py-4 pr-16 rounded-xl border-2 border-gray-200 focus:border-[#F15F5F] focus:outline-none text-lg"
-                  placeholder="금액 입력"
+                  min={0}
+                  value={descendantCount || ''}
+                  onChange={(e) => setDescendantCount(Number(e.target.value))}
+                  className="w-full px-4 py-4 rounded-xl border-2 border-gray-200 focus:border-[#F15F5F] focus:outline-none text-lg"
+                  placeholder="0"
                 />
-                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">
-                  만원
-                </span>
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-gray-900 mb-3">직계존속 (명)</label>
+                <input
+                  type="number"
+                  min={0}
+                  value={ascendantCount || ''}
+                  onChange={(e) => setAscendantCount(Number(e.target.value))}
+                  className="w-full px-4 py-4 rounded-xl border-2 border-gray-200 focus:border-[#F15F5F] focus:outline-none text-lg"
+                  placeholder="0"
+                />
               </div>
             </div>
+          )}
 
-            {/* 계산 버튼 */}
-            <button
-              className="w-full py-4 bg-[#F15F5F] text-white rounded-xl font-bold hover:bg-[#E14E4E] transition-colors"
-            >
-              상속세 계산
-            </button>
-
-            {/* 참고사항 */}
-            <div className="mt-8 bg-blue-50 border border-blue-200 rounded-xl p-6">
-              <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-                <span>ℹ️</span>
-                상속세 과세 기준표
-              </h3>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-white">
-                    <tr>
-                      <th className="px-4 py-2 text-left font-medium text-gray-700">과세표준</th>
-                      <th className="px-4 py-2 text-center font-medium text-gray-700">세율</th>
-                      <th className="px-4 py-2 text-right font-medium text-gray-700">누진공제액</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-blue-100">
-                    <tr>
-                      <td className="px-4 py-2 text-gray-600">1억원 이하</td>
-                      <td className="px-4 py-2 text-center">10%</td>
-                      <td className="px-4 py-2 text-right">0원</td>
-                    </tr>
-                    <tr>
-                      <td className="px-4 py-2 text-gray-600">5억원 이하</td>
-                      <td className="px-4 py-2 text-center">20%</td>
-                      <td className="px-4 py-2 text-right">1천만원</td>
-                    </tr>
-                    <tr>
-                      <td className="px-4 py-2 text-gray-600">10억원 이하</td>
-                      <td className="px-4 py-2 text-center">30%</td>
-                      <td className="px-4 py-2 text-right">6천만원</td>
-                    </tr>
-                    <tr>
-                      <td className="px-4 py-2 text-gray-600">30억원 이하</td>
-                      <td className="px-4 py-2 text-center">40%</td>
-                      <td className="px-4 py-2 text-right">1억6천만원</td>
-                    </tr>
-                    <tr>
-                      <td className="px-4 py-2 text-gray-600">30억원 초과</td>
-                      <td className="px-4 py-2 text-center">50%</td>
-                      <td className="px-4 py-2 text-right">4억6천만원</td>
-                    </tr>
-                  </tbody>
-                </table>
+          {/* 인적공제 입력 (배우자유(상속), 배우자무) */}
+          {showPersonalFields && (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-4">
+              <p className="text-xs font-bold text-amber-700 tracking-wide">인적공제 항목</p>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 mb-2">자녀 (명)</label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={childrenCount || ''}
+                    onChange={(e) => setChildrenCount(Number(e.target.value))}
+                    className="w-full px-4 py-3 rounded-lg border-2 border-amber-200 focus:border-[#F15F5F] focus:outline-none"
+                    placeholder="0"
+                  />
+                  <p className="text-xs text-amber-600 mt-1">
+                    {use2024Reform ? '1인당 5억 공제' : '1인당 5천만 공제'}
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 mb-2">고령자 (명)</label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={elderlyCount || ''}
+                    onChange={(e) => setElderlyCount(Number(e.target.value))}
+                    className="w-full px-4 py-3 rounded-lg border-2 border-amber-200 focus:border-[#F15F5F] focus:outline-none"
+                    placeholder="0"
+                  />
+                  <p className="text-xs text-amber-600 mt-1">1인당 5천만 공제</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 mb-2">미성년 (명)</label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={minorCount || ''}
+                    onChange={(e) => setMinorCount(Number(e.target.value))}
+                    className="w-full px-4 py-3 rounded-lg border-2 border-amber-200 focus:border-[#F15F5F] focus:outline-none"
+                    placeholder="0"
+                  />
+                  <p className="text-xs text-amber-600 mt-1">1인당 1천만 공제</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 mb-2">장애인 (명)</label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={disabledCount || ''}
+                    onChange={(e) => setDisabledCount(Number(e.target.value))}
+                    className="w-full px-4 py-3 rounded-lg border-2 border-amber-200 focus:border-[#F15F5F] focus:outline-none"
+                    placeholder="0"
+                  />
+                  <p className="text-xs text-amber-600 mt-1">1인당 1천만 공제</p>
+                </div>
               </div>
             </div>
+          )}
 
-            {/* 주의사항 */}
-            <div className="bg-red-50 border border-red-200 rounded-xl p-6">
-              <h3 className="font-bold text-gray-900 mb-3">⚠️ 주의사항</h3>
-              <p className="text-sm text-gray-700 leading-relaxed">
-                본 계산기는 대략적인 금액을 예측하는 참고용으로만 사용하여야 하며
-                실제 상속세 납부시에는 세무사의 도움을 받으셔야 합니다.
-              </p>
+          {/* 계산 버튼 */}
+          <button
+            onClick={handleCalculate}
+            className="w-full py-4 bg-[#F15F5F] text-white rounded-xl font-bold hover:bg-[#E14E4E] transition-colors"
+          >
+            상속세 계산
+          </button>
+
+          {/* 결과 */}
+          {result && (
+            <div className="mt-8 space-y-4">
+              <div className="bg-gradient-to-br from-red-50 to-pink-50/30 rounded-2xl p-6 border border-red-100">
+                <div className="text-center mb-6">
+                  <p className="text-sm text-gray-600 mb-2">예상 상속세</p>
+                  <p className="text-4xl font-bold text-[#F15F5F]">
+                    {result.finalTaxWon.toLocaleString()}원
+                  </p>
+                </div>
+
+                <div className="space-y-3 border-t border-red-200 pt-4">
+                  {/* 상속세과세가액 산출 */}
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">상속재산</span>
+                    <span className="font-medium">{result.inheritanceAmount.toLocaleString()}만원</span>
+                  </div>
+                  {result.funeralExpense > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">장례비용 등</span>
+                      <span className="font-medium text-[#F15F5F]">-{result.funeralExpense.toLocaleString()}만원</span>
+                    </div>
+                  )}
+                  {result.debtAmount > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">채무</span>
+                      <span className="font-medium text-[#F15F5F]">-{result.debtAmount.toLocaleString()}만원</span>
+                    </div>
+                  )}
+                  {result.pastGiftAmount > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">사전증여 가산</span>
+                      <span className="font-medium">+{result.pastGiftAmount.toLocaleString()}만원</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-sm font-bold border-t border-red-200 pt-3">
+                    <span className="text-gray-900">상속세과세가액</span>
+                    <span>{result.taxableInheritance.toLocaleString()}만원</span>
+                  </div>
+
+                  {/* 공제 항목 */}
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">
+                      {activeTab === 'spouse-simple'
+                        ? '일괄공제'
+                        : result.generalDeduction === result.lumpSumDeduction || result.lumpSumDeduction > 0
+                          ? '일괄공제'
+                          : `기초공제(${result.basicDeduction.toLocaleString()}만) + 인적공제(${result.personalDeduction.toLocaleString()}만)`}
+                    </span>
+                    <span className="font-medium">{result.generalDeduction.toLocaleString()}만원</span>
+                  </div>
+                  {result.spouseDeduction > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">배우자공제</span>
+                      <span className="font-medium">{result.spouseDeduction.toLocaleString()}만원</span>
+                    </div>
+                  )}
+                  {result.financialDeduction > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">금융재산공제</span>
+                      <span className="font-medium">{result.financialDeduction.toLocaleString()}만원</span>
+                    </div>
+                  )}
+                  {result.residenceDeduction > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">동거주택공제</span>
+                      <span className="font-medium">{result.residenceDeduction.toLocaleString()}만원</span>
+                    </div>
+                  )}
+                  {result.appraisalFee > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">감정평가수수료</span>
+                      <span className="font-medium">{result.appraisalFee.toLocaleString()}만원</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">상속공제 소계</span>
+                    <span className="font-medium">{result.totalDeductions.toLocaleString()}만원</span>
+                  </div>
+                  {result.appliedDeductions < result.totalDeductions && (
+                    <div className="flex justify-between text-sm font-medium text-amber-700">
+                      <span>공제 종합한도 적용</span>
+                      <span>-{result.appliedDeductions.toLocaleString()}만원</span>
+                    </div>
+                  )}
+                  {result.appliedDeductions >= result.totalDeductions && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">적용 공제</span>
+                      <span className="font-medium text-[#F15F5F]">-{result.appliedDeductions.toLocaleString()}만원</span>
+                    </div>
+                  )}
+
+                  {/* 과세표준·세율 */}
+                  <div className="flex justify-between text-sm font-bold border-t border-red-200 pt-3">
+                    <span className="text-gray-900">과세표준</span>
+                    <span>{result.taxBase.toLocaleString()}만원</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">세율</span>
+                    <span className="font-medium">{result.taxRate}%</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">누진공제</span>
+                    <span className="font-medium text-[#F15F5F]">-{result.progressiveDeduction.toLocaleString()}만원</span>
+                  </div>
+
+                  {/* 산출세액·공제 */}
+                  <div className="flex justify-between text-sm font-bold border-t border-red-200 pt-3">
+                    <span className="text-gray-900">산출세액</span>
+                    <span>{(result.baseTax * 10000).toLocaleString()}원</span>
+                  </div>
+                  {result.generationSkipSurcharge > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">세대생략가산액 ({isMinorHeir ? '40%' : '30%'})</span>
+                      <span className="font-medium">{(result.generationSkipSurcharge * 10000).toLocaleString()}원</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">신고세액공제 (3%)</span>
+                    <span className="font-medium text-[#F15F5F]">-{result.filingDeductionWon.toLocaleString()}원</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 참고사항 */}
+          <div className="mt-8 bg-blue-50 border border-blue-200 rounded-xl p-6">
+            <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
+              <span>ℹ️</span>
+              상속세 과세 기준표 {use2024Reform ? '(2024 개정안)' : '(현행)'}
+            </h3>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-white">
+                  <tr>
+                    <th className="px-4 py-2 text-left font-medium text-gray-700">과세표준</th>
+                    <th className="px-4 py-2 text-center font-medium text-gray-700">세율</th>
+                    <th className="px-4 py-2 text-right font-medium text-gray-700">누진공제액</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-blue-100">
+                  {use2024Reform ? (
+                    <>
+                      <tr>
+                        <td className="px-4 py-2 text-gray-600">2억원 이하</td>
+                        <td className="px-4 py-2 text-center">10%</td>
+                        <td className="px-4 py-2 text-right">0원</td>
+                      </tr>
+                      <tr>
+                        <td className="px-4 py-2 text-gray-600">5억원 이하</td>
+                        <td className="px-4 py-2 text-center">20%</td>
+                        <td className="px-4 py-2 text-right">2천만원</td>
+                      </tr>
+                      <tr>
+                        <td className="px-4 py-2 text-gray-600">10억원 이하</td>
+                        <td className="px-4 py-2 text-center">30%</td>
+                        <td className="px-4 py-2 text-right">7천만원</td>
+                      </tr>
+                      <tr>
+                        <td className="px-4 py-2 text-gray-600">10억원 초과</td>
+                        <td className="px-4 py-2 text-center">40%</td>
+                        <td className="px-4 py-2 text-right">1억7천만원</td>
+                      </tr>
+                    </>
+                  ) : (
+                    <>
+                      <tr>
+                        <td className="px-4 py-2 text-gray-600">1억원 이하</td>
+                        <td className="px-4 py-2 text-center">10%</td>
+                        <td className="px-4 py-2 text-right">0원</td>
+                      </tr>
+                      <tr>
+                        <td className="px-4 py-2 text-gray-600">5억원 이하</td>
+                        <td className="px-4 py-2 text-center">20%</td>
+                        <td className="px-4 py-2 text-right">1천만원</td>
+                      </tr>
+                      <tr>
+                        <td className="px-4 py-2 text-gray-600">10억원 이하</td>
+                        <td className="px-4 py-2 text-center">30%</td>
+                        <td className="px-4 py-2 text-right">6천만원</td>
+                      </tr>
+                      <tr>
+                        <td className="px-4 py-2 text-gray-600">30억원 이하</td>
+                        <td className="px-4 py-2 text-center">40%</td>
+                        <td className="px-4 py-2 text-right">1억6천만원</td>
+                      </tr>
+                      <tr>
+                        <td className="px-4 py-2 text-gray-600">30억원 초과</td>
+                        <td className="px-4 py-2 text-center">50%</td>
+                        <td className="px-4 py-2 text-right">4억6천만원</td>
+                      </tr>
+                    </>
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
-        )}
 
-        {/* 인적/일괄 공제 탭 */}
-        {activeTab === 'deduction' && (
-          <div className="space-y-6">
-            {/* 안내 문구 */}
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
-              <p className="text-sm text-gray-700 leading-relaxed mb-3">
-                기초공제(2억원) + 인적공제(자녀, 연로자, 장애인 등)와 일괄공제(5억원) 중 큰 금액을 선택하여 공제받을 수 있습니다.
-              </p>
-              <p className="text-sm text-gray-700 leading-relaxed mb-3">
-                "일괄공제 적용"을 클릭하면 복잡한 인적공제 정보를 입력하지 않고 일괄공제를 적용하여 계산하실 수 있습니다.
-                어린 자녀가 있거나 연로자, 장애인이 상속을 받는 경우엔 "인적공제 계산"를 선택해서 정확히 계산해보시길 권장드립니다.
-              </p>
-              <p className="text-sm text-gray-700 leading-relaxed">
-                단, 배우자 단독상속인 경우엔 기초공제 + 인적공제만 적용 가능하므로 "인적공제 계산"를 클릭하여 모든 정보를 입력해주셔야 합니다.
-              </p>
-            </div>
+          {/* 주의사항 */}
+          <div className="bg-red-50 border border-red-200 rounded-xl p-6">
+            <h3 className="font-bold text-gray-900 mb-3">⚠️ 주의사항</h3>
+            <p className="text-sm text-gray-700 leading-relaxed">
+              본 계산기는 대략적인 금액을 예측하는 참고용으로만 사용하여야 하며
+              실제 상속세 납부시에는 세무사의 도움을 받으셔야 합니다.
+            </p>
           </div>
-        )}
+        </div>
       </div>
     </div>
   )

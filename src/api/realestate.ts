@@ -70,7 +70,7 @@ export async function getDongsByLawdCd(lawdCd: string): Promise<string[]> {
  */
 export async function getApartmentsByDong(lawdCd: string, dong: string): Promise<string[]> {
   try {
-    const response = await fetch(`${API_URL}/regions/apartments?lawdCd=${lawdCd}&dong=${encodeURIComponent(dong)}`, { cache: 'no-store' })
+    const response = await fetch(`${API_URL}/regions/apartments?lawdCd=${lawdCd}&dong=${encodeURIComponent(dong)}`)
 
     if (!response.ok) {
       throw new Error(`API 요청 실패: ${response.statusText}`)
@@ -89,7 +89,7 @@ export async function getApartmentsByDong(lawdCd: string, dong: string): Promise
  */
 export async function getAreasByApartment(lawdCd: string, dong: string, apt: string): Promise<string[]> {
   try {
-    const response = await fetch(`${API_URL}/regions/areas?lawdCd=${lawdCd}&dong=${encodeURIComponent(dong)}&apt=${encodeURIComponent(apt)}`, { cache: 'no-store' })
+    const response = await fetch(`${API_URL}/regions/areas?lawdCd=${lawdCd}&dong=${encodeURIComponent(dong)}&apt=${encodeURIComponent(apt)}`)
 
     if (!response.ok) {
       throw new Error(`API 요청 실패: ${response.statusText}`)

@@ -1,16 +1,18 @@
 import { useState, useRef } from 'react'
 
 interface NavigationProps {
-  activeView: 'home' | 'portfolio' | 'calculator'
-  onNavigate: (view: 'home' | 'portfolio' | 'calculator', subView?: string) => void
+  activeView: 'home' | 'portfolio' | 'calculator' | 'tools'
+  onNavigate: (view: 'home' | 'portfolio' | 'calculator' | 'tools', subView?: string) => void
 }
 
 export default function Navigation({ activeView, onNavigate }: NavigationProps) {
   const [showPortfolioMenu, setShowPortfolioMenu] = useState(false)
   const [showTaxMenu, setShowTaxMenu] = useState(false)
+  const [showToolsMenu, setShowToolsMenu] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const portfolioTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const taxTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const toolsTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   const handlePortfolioMouseEnter = () => {
     if (portfolioTimeoutRef.current) {
@@ -35,6 +37,19 @@ export default function Navigation({ activeView, onNavigate }: NavigationProps) 
   const handleTaxMouseLeave = () => {
     taxTimeoutRef.current = setTimeout(() => {
       setShowTaxMenu(false)
+    }, 200)
+  }
+
+  const handleToolsMouseEnter = () => {
+    if (toolsTimeoutRef.current) {
+      clearTimeout(toolsTimeoutRef.current)
+    }
+    setShowToolsMenu(true)
+  }
+
+  const handleToolsMouseLeave = () => {
+    toolsTimeoutRef.current = setTimeout(() => {
+      setShowToolsMenu(false)
     }, 200)
   }
 
@@ -142,6 +157,43 @@ export default function Navigation({ activeView, onNavigate }: NavigationProps) 
                 </div>
               )}
             </div>
+
+            {/* 부동산 도구 메뉴 */}
+            <div
+              className="relative"
+              onMouseEnter={handleToolsMouseEnter}
+              onMouseLeave={handleToolsMouseLeave}
+            >
+              <button
+                onClick={() => handleNavigation('tools')}
+                className={`${
+                  activeView === 'tools' ? 'text-[#F15F5F]' : 'text-gray-400'
+                } hover:text-[#F15F5F] transition-colors text-[15px] font-medium flex items-center gap-1`}
+              >
+                부동산 도구
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              {showToolsMenu && (
+                <div className="absolute top-full left-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50">
+                  <button
+                    onClick={() => handleNavigation('tools', 'brokerage-fee')}
+                    className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-red-50 hover:text-[#F15F5F] transition-colors"
+                  >
+                    중개보수 계산기
+                  </button>
+                  <button
+                    disabled
+                    className="w-full text-left px-4 py-3 text-sm text-gray-400 cursor-not-allowed flex items-center justify-between"
+                  >
+                    전월세 전환 계산기
+                    <span className="text-xs bg-gray-100 px-2 py-0.5 rounded-full">준비중</span>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Mobile Hamburger Button */}
@@ -206,6 +258,30 @@ export default function Navigation({ activeView, onNavigate }: NavigationProps) 
                   className="w-full text-left px-4 py-2 text-sm text-gray-400 cursor-not-allowed flex items-center justify-between"
                 >
                   취득세 계산기
+                  <span className="text-xs bg-gray-100 px-2 py-0.5 rounded-full">준비중</span>
+                </button>
+              </div>
+
+              <button
+                onClick={() => handleNavigation('tools')}
+                className={`w-full text-left px-4 py-3 rounded-lg font-medium transition-colors ${
+                  activeView === 'tools' ? 'bg-red-50 text-[#F15F5F]' : 'text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                부동산 도구
+              </button>
+              <div className="pl-4 space-y-1">
+                <button
+                  onClick={() => handleNavigation('tools', 'brokerage-fee')}
+                  className="w-full text-left px-4 py-2 text-sm text-gray-600 hover:bg-red-50 hover:text-[#F15F5F] rounded-lg transition-colors"
+                >
+                  중개보수 계산기
+                </button>
+                <button
+                  disabled
+                  className="w-full text-left px-4 py-2 text-sm text-gray-400 cursor-not-allowed flex items-center justify-between"
+                >
+                  전월세 전환 계산기
                   <span className="text-xs bg-gray-100 px-2 py-0.5 rounded-full">준비중</span>
                 </button>
               </div>

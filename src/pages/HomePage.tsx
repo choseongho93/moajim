@@ -2,7 +2,7 @@
 // import AdInfeed from '../components/AdInfeed'
 
 interface HomePageProps {
-  navigateTo: (view: 'home' | 'portfolio' | 'calculator', subView?: string) => void
+  navigateTo: (view: 'home' | 'portfolio' | 'calculator' | 'tools', subView?: string) => void
 }
 
 export default function HomePage({ navigateTo }: HomePageProps) {
