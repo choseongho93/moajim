@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { calculateLawyerFee, type LawyerFeeResult } from '../utils/lawyerFee'
+import ShareButtons from '../components/ShareButtons'
 
 type ContractType = 'sale' | 'jeonse' | 'monthly'
 type PropertyType = 'house' | 'officetel' | 'saleLot' | 'etc'
@@ -20,6 +22,10 @@ interface ToolsPageProps {
 export default function ToolsPage({ initialSubView }: ToolsPageProps) {
   if (initialSubView === 'brokerage-fee') {
     return <BrokerageFeeCalculator />
+  }
+
+  if (initialSubView === 'lawyer-fee') {
+    return <LawyerFeeCalculator />
   }
 
   return <ToolsList />
@@ -57,6 +63,22 @@ function ToolsList() {
             <h3 className="text-xl font-bold text-gray-900 mb-2">중개보수 계산기</h3>
             <p className="text-sm text-gray-600 leading-relaxed">
               부동산 매매·임대차 계약 시 공인중개사에 지불하는 중개보수를 계산합니다.
+            </p>
+          </button>
+
+          <button
+            onClick={() => navigateTo('lawyer-fee')}
+            className="group text-left p-6 bg-white rounded-2xl border-2 border-gray-200 hover:border-[#F15F5F] transition-all hover:shadow-lg"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-4xl">⚖️</span>
+              <svg className="w-6 h-6 text-gray-300 group-hover:text-[#F15F5F] group-hover:translate-x-1 transition-all" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">법무사 보수료</h3>
+            <p className="text-sm text-gray-600 leading-relaxed">
+              부동산 등기 시 법무사 기본보수, 부가세, 인지세 등을 계산합니다.
             </p>
           </button>
 
@@ -206,6 +228,7 @@ function BrokerageFeeCalculator() {
 
         <div className="flex items-center gap-3 mb-6 sm:mb-8">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">중개보수 계산</h1>
+          <ShareButtons url="https://moajim.com/?view=tools&sub=brokerage-fee" />
         </div>
 
         {/* 탭 */}
@@ -571,6 +594,242 @@ function BrokerageFeeCalculator() {
             </div>
           </div>
         )}
+      </div>
+    </div>
+  )
+}
+
+// 법무사 보수료 계산기
+function LawyerFeeCalculator() {
+  const [activeTab, setActiveTab] = useState<'explanation' | 'stamp' | 'calc'>('calc')
+  const [taxBase, setTaxBase] = useState<number>(0)
+  const [includePublicCost, setIncludePublicCost] = useState(true)
+  const [result, setResult] = useState<LawyerFeeResult | null>(null)
+
+  const handleCalculate = () => {
+    setResult(calculateLawyerFee({ taxBase, includePublicCost }))
+  }
+
+  const formatWon = (n: number) => n.toLocaleString('ko-KR') + '원'
+
+  return (
+    <div className="min-h-screen bg-white py-6 sm:py-12 px-4 sm:px-6">
+      <div className="max-w-4xl mx-auto">
+        <button
+          onClick={() => { window.location.href = '/?view=tools' }}
+          className="flex items-center gap-2 text-gray-500 hover:text-gray-900 mb-4 sm:mb-6 transition-colors text-sm"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+          부동산 도구 목록
+        </button>
+
+        <div className="flex items-center gap-3 mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">법무사 보수료 계산</h1>
+          <ShareButtons url="https://moajim.com/?view=tools&sub=lawyer-fee" />
+        </div>
+
+        {/* 탭 */}
+        <div className="flex gap-1 sm:gap-2 mb-6 sm:mb-8 border-b border-gray-200 overflow-x-auto">
+          <button
+            onClick={() => setActiveTab('explanation')}
+            className={`px-3 sm:px-4 py-2 sm:py-3 font-medium transition-colors whitespace-nowrap text-sm sm:text-base ${
+              activeTab === 'explanation'
+                ? 'text-[#F15F5F] border-b-2 border-[#F15F5F]'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            설명
+          </button>
+          <button
+            onClick={() => setActiveTab('stamp')}
+            className={`px-3 sm:px-4 py-2 sm:py-3 font-medium transition-colors whitespace-nowrap text-sm sm:text-base ${
+              activeTab === 'stamp'
+                ? 'text-[#F15F5F] border-b-2 border-[#F15F5F]'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            인지·증지
+          </button>
+          <button
+            onClick={() => setActiveTab('calc')}
+            className={`px-3 sm:px-4 py-2 sm:py-3 font-medium transition-colors whitespace-nowrap text-sm sm:text-base ${
+              activeTab === 'calc'
+                ? 'text-[#F15F5F] border-b-2 border-[#F15F5F]'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            계산
+          </button>
+        </div>
+
+        {/* 설명 탭 */}
+        {activeTab === 'explanation' && (
+          <div className="space-y-6">
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
+              <p className="text-gray-700 leading-relaxed">
+                부동산 소유권이전등기를 법무사에게 의뢰할 경우 발생하는 비용입니다.
+                기본보수는 과세표준(시가표준액 또는 거래가액)에 따라 결정되며,
+                여기에 부가가치세(10%)와 교통비가 추가됩니다.
+              </p>
+            </div>
+            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-3 text-left font-bold text-gray-900">과세표준</th>
+                    <th className="px-4 py-3 text-left font-bold text-gray-900">기본보수</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  <tr>
+                    <td className="px-4 py-2">5,000만원 이하</td>
+                    <td className="px-4 py-2">210,000원</td>
+                  </tr>
+                  <tr>
+                    <td className="px-4 py-2">5,000만원 ~ 1억원</td>
+                    <td className="px-4 py-2">210,000원 + 초과분 × 0.1%</td>
+                  </tr>
+                  <tr>
+                    <td className="px-4 py-2">1억원 초과</td>
+                    <td className="px-4 py-2">260,000원 + 초과분 × 0.09%</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* 인지·증지 탭 */}
+        {activeTab === 'stamp' && (
+          <div className="space-y-6">
+            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+              <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
+                <h3 className="font-bold text-gray-900">인지세 (수입인지)</h3>
+              </div>
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-3 text-left font-bold text-gray-900">기재금액</th>
+                    <th className="px-4 py-3 text-right font-bold text-gray-900">인지세</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  <tr><td className="px-4 py-2">1,000만원 이하</td><td className="px-4 py-2 text-right">비과세</td></tr>
+                  <tr><td className="px-4 py-2">1,000만원 ~ 3,000만원</td><td className="px-4 py-2 text-right">20,000원</td></tr>
+                  <tr><td className="px-4 py-2">3,000만원 ~ 5,000만원</td><td className="px-4 py-2 text-right">40,000원</td></tr>
+                  <tr><td className="px-4 py-2">5,000만원 ~ 1억원</td><td className="px-4 py-2 text-right">70,000원</td></tr>
+                  <tr><td className="px-4 py-2">1억원 ~ 10억원</td><td className="px-4 py-2 text-right">150,000원</td></tr>
+                  <tr><td className="px-4 py-2">10억원 초과</td><td className="px-4 py-2 text-right">350,000원</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
+              <h3 className="font-bold text-gray-900 mb-2">등기신청수수료 (증지)</h3>
+              <p className="text-gray-700 text-sm leading-relaxed">
+                소유권이전등기 신청 시 납부하는 수수료로, 2025.8.1 이후 <strong>18,000원</strong>입니다.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* 계산 탭 */}
+        {activeTab === 'calc' && (
+          <div className="space-y-6">
+            {/* 과세표준 입력 */}
+            <div>
+              <label className="block text-sm font-bold text-gray-900 mb-3">
+                과세표준 (거래가액 또는 시가표준액)
+              </label>
+              <div className="relative">
+                <input
+                  type="number"
+                  value={taxBase || ''}
+                  onChange={(e) => setTaxBase(Number(e.target.value))}
+                  className="w-full px-4 py-4 pr-16 rounded-xl border-2 border-gray-200 focus:border-[#F15F5F] focus:outline-none text-lg"
+                  placeholder="금액 입력"
+                />
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">
+                  만원
+                </span>
+              </div>
+            </div>
+
+            {/* 공공비용 포함 체크박스 */}
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={includePublicCost}
+                onChange={(e) => setIncludePublicCost(e.target.checked)}
+                className="w-5 h-5 rounded border-gray-300 text-[#F15F5F] focus:ring-[#F15F5F]"
+              />
+              <span className="text-sm font-medium text-gray-700">공공비용 포함 (인지세 + 등기신청수수료)</span>
+            </label>
+
+            {/* 계산 버튼 */}
+            <button
+              onClick={handleCalculate}
+              disabled={taxBase <= 0}
+              className="w-full py-4 bg-[#F15F5F] text-white font-bold rounded-xl hover:bg-[#d94f4f] transition-colors disabled:opacity-40 disabled:cursor-not-allowed text-lg"
+            >
+              계산하기
+            </button>
+
+            {/* 결과 */}
+            {result && (
+              <div className="bg-gray-50 rounded-2xl p-6 space-y-4">
+                <h3 className="text-lg font-bold text-gray-900 mb-4">계산 결과</h3>
+
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">기본보수</span>
+                    <span className="font-medium text-gray-900">{formatWon(result.baseFee)}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">부가가치세 (10%)</span>
+                    <span className="font-medium text-gray-900">{formatWon(result.vat)}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">교통비</span>
+                    <span className="font-medium text-gray-900">{formatWon(result.transportFee)}</span>
+                  </div>
+
+                  {includePublicCost && (
+                    <>
+                      <div className="border-t border-gray-200 pt-3">
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-600">인지세 (수입인지)</span>
+                          <span className="font-medium text-gray-900">{formatWon(result.stampTax)}</span>
+                        </div>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">등기신청수수료 (증지)</span>
+                        <span className="font-medium text-gray-900">{formatWon(result.registrationFee)}</span>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                <div className="border-t-2 border-[#F15F5F] pt-4 mt-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-lg font-bold text-gray-900">합계</span>
+                    <span className="text-2xl font-bold text-[#F15F5F]">{formatWon(result.totalFee)}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* 주의사항 */}
+        <div className="bg-red-50 border border-red-200 rounded-xl p-6 mt-6">
+          <h3 className="font-bold text-gray-900 mb-3">⚠️ 주의사항</h3>
+          <p className="text-sm text-gray-700 leading-relaxed">
+            본 계산기는 소유권이전등기 기준 대략적인 금액을 예측하는 참고용입니다.
+            실제 법무사 보수는 사안의 복잡도, 지역 등에 따라 달라질 수 있습니다.
+          </p>
+        </div>
       </div>
     </div>
   )

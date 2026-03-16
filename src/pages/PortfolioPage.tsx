@@ -5,6 +5,7 @@ import { formatKoreanAmount, formatTextWithCommas } from '../utils/currency'
 import { getCryptoPrices, CRYPTO_LIST } from '../api/prices'
 import { searchRealEstate, parseDealAmount, getDongsByLawdCd, getApartmentsByDong, getAreasByApartment, getCitiesFromAPI, getDistrictsFromAPI } from '../api/realestate'
 import Toast from '../components/Toast'
+import ShareButtons from '../components/ShareButtons'
 import LoadingOverlay from '../components/LoadingOverlay'
 
 interface PortfolioPageProps {
@@ -1013,6 +1014,9 @@ function ResultsView({
             <div className="flex items-center justify-center gap-2">
               <span className="text-2xl font-bold text-[#F15F5F]">{matchRate.toFixed(1)}%</span>
               <span className="text-sm text-gray-600">일치</span>
+            </div>
+            <div className="mt-4">
+              <ShareButtons url="https://moajim.com/?view=portfolio" />
             </div>
           </div>
 

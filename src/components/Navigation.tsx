@@ -53,7 +53,7 @@ export default function Navigation({ activeView, onNavigate }: NavigationProps) 
     }, 200)
   }
 
-  const handleNavigation = (view: 'home' | 'portfolio' | 'calculator', subView?: string) => {
+  const handleNavigation = (view: 'home' | 'portfolio' | 'calculator' | 'tools', subView?: string) => {
     onNavigate(view, subView)
     setMobileMenuOpen(false)
   }
@@ -185,6 +185,12 @@ export default function Navigation({ activeView, onNavigate }: NavigationProps) 
                     중개보수 계산기
                   </button>
                   <button
+                    onClick={() => handleNavigation('tools', 'lawyer-fee')}
+                    className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-red-50 hover:text-[#F15F5F] transition-colors"
+                  >
+                    법무사 보수료
+                  </button>
+                  <button
                     disabled
                     className="w-full text-left px-4 py-3 text-sm text-gray-400 cursor-not-allowed flex items-center justify-between"
                   >
@@ -276,6 +282,12 @@ export default function Navigation({ activeView, onNavigate }: NavigationProps) 
                   className="w-full text-left px-4 py-2 text-sm text-gray-600 hover:bg-red-50 hover:text-[#F15F5F] rounded-lg transition-colors"
                 >
                   중개보수 계산기
+                </button>
+                <button
+                  onClick={() => handleNavigation('tools', 'lawyer-fee')}
+                  className="w-full text-left px-4 py-2 text-sm text-gray-600 hover:bg-red-50 hover:text-[#F15F5F] rounded-lg transition-colors"
+                >
+                  법무사 보수료
                 </button>
                 <button
                   disabled

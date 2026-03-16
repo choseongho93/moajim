@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { calculateGiftTax, type DonorType, type GiftTaxResult } from '../utils/giftTax'
 import { calculateInheritanceTax, type InheritanceTabType, type InheritanceTaxResult } from '../utils/inheritanceTax'
+import ShareButtons from '../components/ShareButtons'
 
 interface CalculatorPageProps {
   initialSubView?: string
@@ -145,6 +146,7 @@ function GiftTaxCalculator() {
 
         <div className="flex items-center gap-3 mb-6 sm:mb-8">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">증여세 계산</h1>
+          <ShareButtons url="https://moajim.com/?view=calculator&sub=gift-tax" />
         </div>
 
         {/* 탭 */}
@@ -738,6 +740,7 @@ function InheritanceTaxCalculator() {
 
         <div className="flex items-center gap-3 mb-6 sm:mb-8">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">상속세 계산</h1>
+          <ShareButtons url="https://moajim.com/?view=calculator&sub=inheritance-tax" />
         </div>
 
         {/* 탭 */}
@@ -1289,3 +1292,4 @@ function InheritanceTaxCalculator() {
     </div>
   )
 }
+
