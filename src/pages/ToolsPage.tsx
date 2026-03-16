@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { calculateLawyerFee, type LawyerFeeResult } from '../utils/lawyerFee'
+import { formatKoreanAmount } from '../utils/currency'
 import ShareButtons from '../components/ShareButtons'
 
 type ContractType = 'sale' | 'jeonse' | 'monthly'
@@ -300,6 +301,9 @@ function BrokerageFeeCalculator() {
                   />
                   <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">만원</span>
                 </div>
+                {amount > 0 && (
+                  <p className="text-xs text-[#F15F5F] mt-1">= {formatKoreanAmount(amount)}</p>
+                )}
               </div>
             )}
 
@@ -316,6 +320,9 @@ function BrokerageFeeCalculator() {
                   />
                   <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">만원</span>
                 </div>
+                {deposit > 0 && (
+                  <p className="text-xs text-[#F15F5F] mt-1">= {formatKoreanAmount(deposit)}</p>
+                )}
               </div>
             )}
 
@@ -333,6 +340,9 @@ function BrokerageFeeCalculator() {
                     />
                     <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">만원</span>
                   </div>
+                  {deposit > 0 && (
+                    <p className="text-xs text-[#F15F5F] mt-1">= {formatKoreanAmount(deposit)}</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-gray-900 mb-3">월세</label>
@@ -346,6 +356,9 @@ function BrokerageFeeCalculator() {
                     />
                     <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">만원</span>
                   </div>
+                  {monthlyRent > 0 && (
+                    <p className="text-xs text-[#F15F5F] mt-1">= {formatKoreanAmount(monthlyRent)}</p>
+                  )}
                 </div>
               </>
             )}
@@ -671,7 +684,7 @@ function LawyerFeeCalculator() {
               <p className="text-gray-700 leading-relaxed">
                 부동산 소유권이전등기를 법무사에게 의뢰할 경우 발생하는 비용입니다.
                 기본보수는 과세표준(시가표준액 또는 거래가액)에 따라 결정되며,
-                여기에 부가가치세(10%)와 교통비가 추가됩니다.
+                여기에 부가가치세(10%), 일당, 교통비, 각종 대행료가 추가됩니다.
               </p>
             </div>
             <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
@@ -695,6 +708,24 @@ function LawyerFeeCalculator() {
                     <td className="px-4 py-2">1억원 초과</td>
                     <td className="px-4 py-2">260,000원 + 초과분 × 0.09%</td>
                   </tr>
+                </tbody>
+              </table>
+            </div>
+            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-3 text-left font-bold text-gray-900">항목</th>
+                    <th className="px-4 py-3 text-right font-bold text-gray-900">금액</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  <tr><td className="px-4 py-2">부가가치세</td><td className="px-4 py-2 text-right">기본보수의 10%</td></tr>
+                  <tr><td className="px-4 py-2">일당 (4시간 이내)</td><td className="px-4 py-2 text-right">80,000원</td></tr>
+                  <tr><td className="px-4 py-2">교통비</td><td className="px-4 py-2 text-right">80,000원</td></tr>
+                  <tr><td className="px-4 py-2">등기·신고 대행</td><td className="px-4 py-2 text-right">50,000원</td></tr>
+                  <tr><td className="px-4 py-2">세금 신고·납부 대행</td><td className="px-4 py-2 text-right">50,000원</td></tr>
+                  <tr><td className="px-4 py-2">채권매입(할인) 대행</td><td className="px-4 py-2 text-right">40,000원</td></tr>
                 </tbody>
               </table>
             </div>
@@ -754,6 +785,9 @@ function LawyerFeeCalculator() {
                   만원
                 </span>
               </div>
+              {taxBase > 0 && (
+                <p className="text-xs text-[#F15F5F] mt-1">= {formatKoreanAmount(taxBase)}</p>
+              )}
             </div>
 
             {/* 공공비용 포함 체크박스 */}
@@ -791,8 +825,27 @@ function LawyerFeeCalculator() {
                     <span className="font-medium text-gray-900">{formatWon(result.vat)}</span>
                   </div>
                   <div className="flex justify-between items-center">
+                    <span className="text-gray-600">일당</span>
+                    <span className="font-medium text-gray-900">{formatWon(result.dailyAllowance)}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
                     <span className="text-gray-600">교통비</span>
                     <span className="font-medium text-gray-900">{formatWon(result.transportFee)}</span>
+                  </div>
+
+                  <div className="border-t border-gray-200 pt-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">등기·신고 대행</span>
+                      <span className="font-medium text-gray-900">{formatWon(result.registrationAgent)}</span>
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">세금 신고·납부 대행</span>
+                    <span className="font-medium text-gray-900">{formatWon(result.taxAgent)}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">채권매입 대행</span>
+                    <span className="font-medium text-gray-900">{formatWon(result.bondAgent)}</span>
                   </div>
 
                   {includePublicCost && (

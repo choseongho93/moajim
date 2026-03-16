@@ -88,9 +88,17 @@ export default function ShareButtons({ url, title, description }: ShareButtonsPr
   }
 
   const handleKakao = () => {
-    if (!window.Kakao?.isInitialized()) {
-      setToast({ message: '카카오 SDK 로딩 중입니다', type: 'error' })
+    if (!window.Kakao) {
+      setToast({ message: '카카오 SDK를 불러오지 못했습니다', type: 'error' })
       return
+    }
+    if (!window.Kakao.isInitialized()) {
+      try {
+        window.Kakao.init('69a66ff40037f9bb5a2d123d21b24bb6')
+      } catch {
+        setToast({ message: '카카오 초기화에 실패했습니다', type: 'error' })
+        return
+      }
     }
     window.Kakao.Share.sendDefault({
       objectType: 'feed',

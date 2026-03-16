@@ -2,7 +2,8 @@
  * 법무사 보수료 계산 유틸리티
  *
  * 소유권이전등기 기준 (2024.9.12 개정)
- * - 기본보수 + 부가가치세(10%) + 교통비(80,000원)
+ * - 기본보수 + 부가가치세(10%) + 일당(80,000원) + 교통비(80,000원)
+ * - 대행료: 등기·신고 대행(50,000원) + 세금 신고·납부 대행(50,000원) + 채권매입 대행(40,000원)
  * - 공공비용: 인지세(수입인지) + 등기신청수수료(증지, 18,000원)
  */
 
@@ -14,7 +15,11 @@ export interface LawyerFeeInput {
 export interface LawyerFeeResult {
   baseFee: number           // 기본보수 (원)
   vat: number               // 부가가치세 (원)
+  dailyAllowance: number    // 일당 (원)
   transportFee: number      // 교통비 (원)
+  registrationAgent: number // 등기·신고 대행 (원)
+  taxAgent: number          // 세금 신고·납부 대행 (원)
+  bondAgent: number         // 채권매입 대행 (원)
   stampTax: number           // 인지세 (원)
   registrationFee: number   // 등기신청수수료 (원)
   totalFee: number           // 합계 (원)
@@ -47,16 +52,24 @@ export function getStampTax(taxBaseMan: number): number {
 export function calculateLawyerFee(input: LawyerFeeInput): LawyerFeeResult {
   const baseFee = getBaseFee(input.taxBase)
   const vat = Math.round(baseFee * 0.1)
+  const dailyAllowance = 80000
   const transportFee = 80000
+  const registrationAgent = 50000
+  const taxAgent = 50000
+  const bondAgent = 40000
   const stampTax = input.includePublicCost ? getStampTax(input.taxBase) : 0
   const registrationFee = input.includePublicCost ? 18000 : 0
 
-  const totalFee = baseFee + vat + transportFee + stampTax + registrationFee
+  const totalFee = baseFee + vat + dailyAllowance + transportFee + registrationAgent + taxAgent + bondAgent + stampTax + registrationFee
 
   return {
     baseFee,
     vat,
+    dailyAllowance,
     transportFee,
+    registrationAgent,
+    taxAgent,
+    bondAgent,
     stampTax,
     registrationFee,
     totalFee,

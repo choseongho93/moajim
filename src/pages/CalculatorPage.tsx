@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { calculateGiftTax, type DonorType, type GiftTaxResult } from '../utils/giftTax'
 import { calculateInheritanceTax, type InheritanceTabType, type InheritanceTaxResult } from '../utils/inheritanceTax'
+import { formatKoreanAmount } from '../utils/currency'
 import ShareButtons from '../components/ShareButtons'
 
 interface CalculatorPageProps {
@@ -251,6 +252,9 @@ function GiftTaxCalculator() {
                   만원
                 </span>
               </div>
+              {giftAmount > 0 && (
+                <p className="text-xs text-[#F15F5F] mt-1">= {formatKoreanAmount(giftAmount)}</p>
+              )}
             </div>
 
             {/* 직계존속 전용 옵션 */}
@@ -298,18 +302,23 @@ function GiftTaxCalculator() {
                 </label>
 
                 {isMarriageGift && (
-                  <div className="ml-7 relative">
-                    <input
-                      type="number"
-                      value={marriageGiftAmount || ''}
-                      onChange={(e) => setMarriageGiftAmount(Number(e.target.value))}
-                      className="w-full px-4 py-3 pr-16 rounded-lg border-2 border-amber-200 focus:border-[#F15F5F] focus:outline-none text-sm"
-                      placeholder="결혼·출산 증여 금액"
-                    />
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-medium">
-                      만원
-                    </span>
-                  </div>
+                  <>
+                    <div className="ml-7 relative">
+                      <input
+                        type="number"
+                        value={marriageGiftAmount || ''}
+                        onChange={(e) => setMarriageGiftAmount(Number(e.target.value))}
+                        className="w-full px-4 py-3 pr-16 rounded-lg border-2 border-amber-200 focus:border-[#F15F5F] focus:outline-none text-sm"
+                        placeholder="결혼·출산 증여 금액"
+                      />
+                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-medium">
+                        만원
+                      </span>
+                    </div>
+                    {marriageGiftAmount > 0 && (
+                      <p className="ml-7 text-xs text-[#F15F5F] mt-1">= {formatKoreanAmount(marriageGiftAmount)}</p>
+                    )}
+                  </>
                 )}
               </div>
             )}
@@ -329,18 +338,23 @@ function GiftTaxCalculator() {
               </label>
 
               {hasDebt && (
-                <div className="ml-7 relative">
-                  <input
-                    type="number"
-                    value={debtAmount || ''}
-                    onChange={(e) => setDebtAmount(Number(e.target.value))}
-                    className="w-full px-4 py-3 pr-16 rounded-lg border-2 border-gray-200 focus:border-[#F15F5F] focus:outline-none"
-                    placeholder="인수한 채무 금액"
-                  />
-                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-medium">
-                    만원
-                  </span>
-                </div>
+                <>
+                  <div className="ml-7 relative">
+                    <input
+                      type="number"
+                      value={debtAmount || ''}
+                      onChange={(e) => setDebtAmount(Number(e.target.value))}
+                      className="w-full px-4 py-3 pr-16 rounded-lg border-2 border-gray-200 focus:border-[#F15F5F] focus:outline-none"
+                      placeholder="인수한 채무 금액"
+                    />
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-medium">
+                      만원
+                    </span>
+                  </div>
+                  {debtAmount > 0 && (
+                    <p className="ml-7 text-xs text-[#F15F5F] mt-1">= {formatKoreanAmount(debtAmount)}</p>
+                  )}
+                </>
               )}
 
               <label className="flex items-center gap-3 cursor-pointer">
@@ -354,18 +368,23 @@ function GiftTaxCalculator() {
               </label>
 
               {hasTaxExempt && (
-                <div className="ml-7 relative">
-                  <input
-                    type="number"
-                    value={taxExemptAmount || ''}
-                    onChange={(e) => setTaxExemptAmount(Number(e.target.value))}
-                    className="w-full px-4 py-3 pr-16 rounded-lg border-2 border-gray-200 focus:border-[#F15F5F] focus:outline-none"
-                    placeholder="비과세 해당 금액"
-                  />
-                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-medium">
-                    만원
-                  </span>
-                </div>
+                <>
+                  <div className="ml-7 relative">
+                    <input
+                      type="number"
+                      value={taxExemptAmount || ''}
+                      onChange={(e) => setTaxExemptAmount(Number(e.target.value))}
+                      className="w-full px-4 py-3 pr-16 rounded-lg border-2 border-gray-200 focus:border-[#F15F5F] focus:outline-none"
+                      placeholder="비과세 해당 금액"
+                    />
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-medium">
+                      만원
+                    </span>
+                  </div>
+                  {taxExemptAmount > 0 && (
+                    <p className="ml-7 text-xs text-[#F15F5F] mt-1">= {formatKoreanAmount(taxExemptAmount)}</p>
+                  )}
+                </>
               )}
 
               <label className="flex items-center gap-3 cursor-pointer">
@@ -379,18 +398,23 @@ function GiftTaxCalculator() {
               </label>
 
               {hasAppraisalFee && (
-                <div className="ml-7 relative">
-                  <input
-                    type="number"
-                    value={appraisalFee || ''}
-                    onChange={(e) => setAppraisalFee(Number(e.target.value))}
-                    className="w-full px-4 py-3 pr-16 rounded-lg border-2 border-gray-200 focus:border-[#F15F5F] focus:outline-none"
-                    placeholder="감정평가 수수료"
-                  />
-                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-medium">
-                    만원
-                  </span>
-                </div>
+                <>
+                  <div className="ml-7 relative">
+                    <input
+                      type="number"
+                      value={appraisalFee || ''}
+                      onChange={(e) => setAppraisalFee(Number(e.target.value))}
+                      className="w-full px-4 py-3 pr-16 rounded-lg border-2 border-gray-200 focus:border-[#F15F5F] focus:outline-none"
+                      placeholder="감정평가 수수료"
+                    />
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-medium">
+                      만원
+                    </span>
+                  </div>
+                  {appraisalFee > 0 && (
+                    <p className="ml-7 text-xs text-[#F15F5F] mt-1">= {formatKoreanAmount(appraisalFee)}</p>
+                  )}
+                </>
               )}
             </div>
 
@@ -409,18 +433,23 @@ function GiftTaxCalculator() {
               </label>
 
               {hasPastGift && (
-                <div className="ml-7 relative">
-                  <input
-                    type="number"
-                    value={pastGiftAmount || ''}
-                    onChange={(e) => setPastGiftAmount(Number(e.target.value))}
-                    className="w-full px-4 py-3 pr-16 rounded-lg border-2 border-gray-200 focus:border-[#F15F5F] focus:outline-none"
-                    placeholder="사전증여 재산가액 합계"
-                  />
-                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-medium">
-                    만원
-                  </span>
-                </div>
+                <>
+                  <div className="ml-7 relative">
+                    <input
+                      type="number"
+                      value={pastGiftAmount || ''}
+                      onChange={(e) => setPastGiftAmount(Number(e.target.value))}
+                      className="w-full px-4 py-3 pr-16 rounded-lg border-2 border-gray-200 focus:border-[#F15F5F] focus:outline-none"
+                      placeholder="사전증여 재산가액 합계"
+                    />
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-medium">
+                      만원
+                    </span>
+                  </div>
+                  {pastGiftAmount > 0 && (
+                    <p className="ml-7 text-xs text-[#F15F5F] mt-1">= {formatKoreanAmount(pastGiftAmount)}</p>
+                  )}
+                </>
               )}
 
               <label className="flex items-center gap-3 cursor-pointer">
@@ -813,6 +842,9 @@ function InheritanceTaxCalculator() {
                   />
                   <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-medium">만원</span>
                 </div>
+                {generationSkipAmount > 0 && (
+                  <p className="ml-6 text-xs text-[#F15F5F] mt-1">= {formatKoreanAmount(generationSkipAmount)}</p>
+                )}
                 <label className="ml-6 flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
@@ -835,16 +867,21 @@ function InheritanceTaxCalculator() {
               <span className="text-sm text-gray-700">채무상속</span>
             </label>
             {hasDebt && (
-              <div className="ml-6 relative">
-                <input
-                  type="number"
-                  value={debtAmount || ''}
-                  onChange={(e) => setDebtAmount(Number(e.target.value))}
-                  className="w-full px-4 py-3 pr-16 rounded-lg border-2 border-gray-200 focus:border-[#F15F5F] focus:outline-none"
-                  placeholder="채무 금액"
-                />
-                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-medium">만원</span>
-              </div>
+              <>
+                <div className="ml-6 relative">
+                  <input
+                    type="number"
+                    value={debtAmount || ''}
+                    onChange={(e) => setDebtAmount(Number(e.target.value))}
+                    className="w-full px-4 py-3 pr-16 rounded-lg border-2 border-gray-200 focus:border-[#F15F5F] focus:outline-none"
+                    placeholder="채무 금액"
+                  />
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-medium">만원</span>
+                </div>
+                {debtAmount > 0 && (
+                  <p className="ml-6 text-xs text-[#F15F5F] mt-1">= {formatKoreanAmount(debtAmount)}</p>
+                )}
+              </>
             )}
 
             <label className="flex items-center gap-2 cursor-pointer">
@@ -857,16 +894,21 @@ function InheritanceTaxCalculator() {
               <span className="text-sm text-gray-700">감정평가 수수료</span>
             </label>
             {hasAppraisal && (
-              <div className="ml-6 relative">
-                <input
-                  type="number"
-                  value={appraisalFee || ''}
-                  onChange={(e) => setAppraisalFee(Number(e.target.value))}
-                  className="w-full px-4 py-3 pr-16 rounded-lg border-2 border-gray-200 focus:border-[#F15F5F] focus:outline-none"
-                  placeholder="수수료 금액"
-                />
-                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-medium">만원</span>
-              </div>
+              <>
+                <div className="ml-6 relative">
+                  <input
+                    type="number"
+                    value={appraisalFee || ''}
+                    onChange={(e) => setAppraisalFee(Number(e.target.value))}
+                    className="w-full px-4 py-3 pr-16 rounded-lg border-2 border-gray-200 focus:border-[#F15F5F] focus:outline-none"
+                    placeholder="수수료 금액"
+                  />
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-medium">만원</span>
+                </div>
+                {appraisalFee > 0 && (
+                  <p className="ml-6 text-xs text-[#F15F5F] mt-1">= {formatKoreanAmount(appraisalFee)}</p>
+                )}
+              </>
             )}
 
             <label className="flex items-center gap-2 cursor-pointer">
@@ -879,16 +921,21 @@ function InheritanceTaxCalculator() {
               <span className="text-sm text-gray-700">동거주택 공제</span>
             </label>
             {hasResidence && (
-              <div className="ml-6 relative">
-                <input
-                  type="number"
-                  value={residenceDeduction || ''}
-                  onChange={(e) => setResidenceDeduction(Number(e.target.value))}
-                  className="w-full px-4 py-3 pr-16 rounded-lg border-2 border-gray-200 focus:border-[#F15F5F] focus:outline-none"
-                  placeholder="공제 금액"
-                />
-                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-medium">만원</span>
-              </div>
+              <>
+                <div className="ml-6 relative">
+                  <input
+                    type="number"
+                    value={residenceDeduction || ''}
+                    onChange={(e) => setResidenceDeduction(Number(e.target.value))}
+                    className="w-full px-4 py-3 pr-16 rounded-lg border-2 border-gray-200 focus:border-[#F15F5F] focus:outline-none"
+                    placeholder="공제 금액"
+                  />
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-medium">만원</span>
+                </div>
+                {residenceDeduction > 0 && (
+                  <p className="ml-6 text-xs text-[#F15F5F] mt-1">= {formatKoreanAmount(residenceDeduction)}</p>
+                )}
+              </>
             )}
 
             <label className="flex items-center gap-2 cursor-pointer">
@@ -901,16 +948,21 @@ function InheritanceTaxCalculator() {
               <span className="text-sm text-gray-700">금융재산 공제</span>
             </label>
             {hasFinancial && (
-              <div className="ml-6 relative">
-                <input
-                  type="number"
-                  value={financialAmount || ''}
-                  onChange={(e) => setFinancialAmount(Number(e.target.value))}
-                  className="w-full px-4 py-3 pr-16 rounded-lg border-2 border-gray-200 focus:border-[#F15F5F] focus:outline-none"
-                  placeholder="금융재산 금액"
-                />
-                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-medium">만원</span>
-              </div>
+              <>
+                <div className="ml-6 relative">
+                  <input
+                    type="number"
+                    value={financialAmount || ''}
+                    onChange={(e) => setFinancialAmount(Number(e.target.value))}
+                    className="w-full px-4 py-3 pr-16 rounded-lg border-2 border-gray-200 focus:border-[#F15F5F] focus:outline-none"
+                    placeholder="금융재산 금액"
+                  />
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-medium">만원</span>
+                </div>
+                {financialAmount > 0 && (
+                  <p className="ml-6 text-xs text-[#F15F5F] mt-1">= {formatKoreanAmount(financialAmount)}</p>
+                )}
+              </>
             )}
 
             <label className="flex items-center gap-2 cursor-pointer">
@@ -923,16 +975,21 @@ function InheritanceTaxCalculator() {
               <span className="text-sm text-gray-700">과거 5년 증여</span>
             </label>
             {hasPastGift && (
-              <div className="ml-6 relative">
-                <input
-                  type="number"
-                  value={pastGiftAmount || ''}
-                  onChange={(e) => setPastGiftAmount(Number(e.target.value))}
-                  className="w-full px-4 py-3 pr-16 rounded-lg border-2 border-gray-200 focus:border-[#F15F5F] focus:outline-none"
-                  placeholder="증여 금액"
-                />
-                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-medium">만원</span>
-              </div>
+              <>
+                <div className="ml-6 relative">
+                  <input
+                    type="number"
+                    value={pastGiftAmount || ''}
+                    onChange={(e) => setPastGiftAmount(Number(e.target.value))}
+                    className="w-full px-4 py-3 pr-16 rounded-lg border-2 border-gray-200 focus:border-[#F15F5F] focus:outline-none"
+                    placeholder="증여 금액"
+                  />
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-medium">만원</span>
+                </div>
+                {pastGiftAmount > 0 && (
+                  <p className="ml-6 text-xs text-[#F15F5F] mt-1">= {formatKoreanAmount(pastGiftAmount)}</p>
+                )}
+              </>
             )}
           </div>
 
@@ -949,6 +1006,9 @@ function InheritanceTaxCalculator() {
               />
               <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">만원</span>
             </div>
+            {inheritanceAmount > 0 && (
+              <p className="text-xs text-[#F15F5F] mt-1">= {formatKoreanAmount(inheritanceAmount)}</p>
+            )}
           </div>
 
           {/* 장례비용 */}
@@ -966,6 +1026,9 @@ function InheritanceTaxCalculator() {
               />
               <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">만원</span>
             </div>
+            {funeralExpense > 0 && (
+              <p className="text-xs text-[#F15F5F] mt-1">= {formatKoreanAmount(funeralExpense)}</p>
+            )}
           </div>
 
           {/* 배우자 상속액 (배우자 유 탭만) */}
@@ -982,6 +1045,9 @@ function InheritanceTaxCalculator() {
                 />
                 <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">만원</span>
               </div>
+              {spouseInheritance > 0 && (
+                <p className="text-xs text-[#F15F5F] mt-1">= {formatKoreanAmount(spouseInheritance)}</p>
+              )}
             </div>
           )}
 
