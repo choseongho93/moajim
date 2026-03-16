@@ -2,10 +2,11 @@ import { useState, useRef } from 'react'
 
 interface NavigationProps {
   activeView: 'home' | 'portfolio' | 'calculator' | 'tools'
+  activeSubView?: string
   onNavigate: (view: 'home' | 'portfolio' | 'calculator' | 'tools', subView?: string) => void
 }
 
-export default function Navigation({ activeView, onNavigate }: NavigationProps) {
+export default function Navigation({ activeView, activeSubView, onNavigate }: NavigationProps) {
   const [showPortfolioMenu, setShowPortfolioMenu] = useState(false)
   const [showTaxMenu, setShowTaxMenu] = useState(false)
   const [showToolsMenu, setShowToolsMenu] = useState(false)
@@ -80,8 +81,8 @@ export default function Navigation({ activeView, onNavigate }: NavigationProps) 
               <button
                 onClick={() => handleNavigation('portfolio')}
                 className={`${
-                  activeView === 'portfolio' ? 'text-[#F15F5F]' : 'text-gray-400'
-                } hover:text-[#F15F5F] transition-colors text-[15px] font-medium flex items-center gap-1`}
+                  activeView === 'portfolio' ? 'text-[#F15F5F] bg-red-50 rounded-lg' : 'text-gray-400'
+                } hover:text-[#F15F5F] hover:bg-red-50 hover:rounded-lg transition-colors text-[15px] font-medium flex items-center gap-1 px-3 py-1.5`}
               >
                 포트폴리오
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -93,7 +94,9 @@ export default function Navigation({ activeView, onNavigate }: NavigationProps) 
                 <div className="absolute top-full left-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50">
                   <button
                     onClick={() => handleNavigation('portfolio', 'analysis')}
-                    className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-red-50 hover:text-[#F15F5F] transition-colors"
+                    className={`w-full text-left px-4 py-3 text-sm transition-colors ${
+                      activeView === 'portfolio' && activeSubView === 'analysis' ? 'bg-red-50 text-[#F15F5F] font-medium' : 'text-gray-700 hover:bg-red-50 hover:text-[#F15F5F]'
+                    }`}
                   >
                     자산 분석하기
                   </button>
@@ -110,8 +113,8 @@ export default function Navigation({ activeView, onNavigate }: NavigationProps) 
               <button
                 onClick={() => handleNavigation('calculator')}
                 className={`${
-                  activeView === 'calculator' ? 'text-[#F15F5F]' : 'text-gray-400'
-                } hover:text-[#F15F5F] transition-colors text-[15px] font-medium flex items-center gap-1`}
+                  activeView === 'calculator' ? 'text-[#F15F5F] bg-red-50 rounded-lg' : 'text-gray-400'
+                } hover:text-[#F15F5F] hover:bg-red-50 hover:rounded-lg transition-colors text-[15px] font-medium flex items-center gap-1 px-3 py-1.5`}
               >
                 세금계산
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -123,13 +126,17 @@ export default function Navigation({ activeView, onNavigate }: NavigationProps) 
                 <div className="absolute top-full left-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50">
                   <button
                     onClick={() => handleNavigation('calculator', 'gift-tax')}
-                    className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-red-50 hover:text-[#F15F5F] transition-colors"
+                    className={`w-full text-left px-4 py-3 text-sm transition-colors ${
+                      activeView === 'calculator' && activeSubView === 'gift-tax' ? 'bg-red-50 text-[#F15F5F] font-medium' : 'text-gray-700 hover:bg-red-50 hover:text-[#F15F5F]'
+                    }`}
                   >
                     증여세 계산기
                   </button>
                   <button
                     onClick={() => handleNavigation('calculator', 'inheritance-tax')}
-                    className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-red-50 hover:text-[#F15F5F] transition-colors"
+                    className={`w-full text-left px-4 py-3 text-sm transition-colors ${
+                      activeView === 'calculator' && activeSubView === 'inheritance-tax' ? 'bg-red-50 text-[#F15F5F] font-medium' : 'text-gray-700 hover:bg-red-50 hover:text-[#F15F5F]'
+                    }`}
                   >
                     상속세 계산기
                   </button>
@@ -167,8 +174,8 @@ export default function Navigation({ activeView, onNavigate }: NavigationProps) 
               <button
                 onClick={() => handleNavigation('tools')}
                 className={`${
-                  activeView === 'tools' ? 'text-[#F15F5F]' : 'text-gray-400'
-                } hover:text-[#F15F5F] transition-colors text-[15px] font-medium flex items-center gap-1`}
+                  activeView === 'tools' ? 'text-[#F15F5F] bg-red-50 rounded-lg' : 'text-gray-400'
+                } hover:text-[#F15F5F] hover:bg-red-50 hover:rounded-lg transition-colors text-[15px] font-medium flex items-center gap-1 px-3 py-1.5`}
               >
                 부동산 도구
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -180,13 +187,17 @@ export default function Navigation({ activeView, onNavigate }: NavigationProps) 
                 <div className="absolute top-full left-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50">
                   <button
                     onClick={() => handleNavigation('tools', 'brokerage-fee')}
-                    className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-red-50 hover:text-[#F15F5F] transition-colors"
+                    className={`w-full text-left px-4 py-3 text-sm transition-colors ${
+                      activeView === 'tools' && activeSubView === 'brokerage-fee' ? 'bg-red-50 text-[#F15F5F] font-medium' : 'text-gray-700 hover:bg-red-50 hover:text-[#F15F5F]'
+                    }`}
                   >
                     중개보수 계산기
                   </button>
                   <button
                     onClick={() => handleNavigation('tools', 'lawyer-fee')}
-                    className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-red-50 hover:text-[#F15F5F] transition-colors"
+                    className={`w-full text-left px-4 py-3 text-sm transition-colors ${
+                      activeView === 'tools' && activeSubView === 'lawyer-fee' ? 'bg-red-50 text-[#F15F5F] font-medium' : 'text-gray-700 hover:bg-red-50 hover:text-[#F15F5F]'
+                    }`}
                   >
                     법무사 보수료
                   </button>

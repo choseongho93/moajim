@@ -63,7 +63,7 @@ function App() {
 
   return (
     <div className="min-h-screen bg-white">
-      <Navigation activeView={activeView} onNavigate={navigateTo} />
+      <Navigation activeView={activeView} activeSubView={subView} onNavigate={navigateTo} />
 
       <main>
         {activeView === 'home' && <HomePage navigateTo={navigateTo} />}
