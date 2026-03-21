@@ -149,23 +149,23 @@ function PropertyTaxSimulator() {
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6 sm:space-y-8">
         {/* 사용법 안내 */}
-        <section className="bg-blue-50 border border-blue-200 rounded-2xl p-5 sm:p-6">
-          <h2 className="text-sm font-bold text-blue-800 mb-2 flex items-center gap-2">
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <section className="bg-gray-50 border border-gray-200 rounded-2xl p-5 sm:p-6">
+          <h2 className="text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+            <svg className="w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            사용법
+            이렇게 사용하세요
           </h2>
-          <ol className="text-xs sm:text-sm text-blue-700 space-y-1.5 ml-5 list-decimal">
-            <li>위의 <strong>"내집 공시가격 확인"</strong> 버튼을 클릭하여 부동산공시가격 알리미에서 내 집의 공시가격을 확인합니다.</li>
-            <li>아래 <strong className="text-orange-600">주황색 영역</strong>에서 미래 변수와 중과 기준을 설정합니다. (기본값 그대로 사용 가능)</li>
-            <li><strong className="text-emerald-600">초록색 영역</strong>에서 가구 정보와 자산을 입력합니다.</li>
+          <ol className="text-xs sm:text-sm text-gray-600 space-y-1.5 ml-5 list-decimal">
+            <li>위의 <strong>"내집 공시가격 확인"</strong> 버튼을 눌러 부동산공시가격 알리미에서 공시가격을 확인합니다.</li>
+            <li>아래 <strong>미래 변수</strong>와 <strong>중과 기준</strong>을 설정합니다. (기본값 그대로 사용 가능)</li>
+            <li><strong>가구 정보</strong>와 <strong>자산</strong>을 입력합니다.</li>
             <li><strong>"계산하기"</strong> 버튼을 클릭하면 현행법 / 2021년 최고점 / 미래 예상 세액을 한 번에 비교합니다.</li>
           </ol>
         </section>
 
         {/* 미래 변수 설정 */}
-        <section className="bg-orange-50 border-2 border-orange-200 rounded-2xl p-5 sm:p-6">
+        <section className="bg-white border-2 border-gray-200 rounded-2xl p-5 sm:p-6">
           <h2 className="text-lg font-bold text-gray-900 mb-1 flex items-center gap-2">
             미래 변수 설정
           </h2>
@@ -218,7 +218,7 @@ function PropertyTaxSimulator() {
         </section>
 
         {/* 미래 중과 판단 기준 */}
-        <section className="bg-orange-50 border-2 border-orange-200 rounded-2xl p-5 sm:p-6">
+        <section className="bg-white border-2 border-gray-200 rounded-2xl p-5 sm:p-6">
           <h2 className="text-lg font-bold text-gray-900 mb-1 flex items-center gap-2">
             미래 중과 판단 기준
             <span className="text-xs font-normal text-gray-400">(2021년 산식 적용)</span>
@@ -255,7 +255,7 @@ function PropertyTaxSimulator() {
         </section>
 
         {/* 01. 자산 포트폴리오 입력 */}
-        <section className="bg-emerald-50 border-2 border-emerald-200 rounded-2xl p-5 sm:p-6">
+        <section className="bg-white border-2 border-gray-200 rounded-2xl p-5 sm:p-6">
           <h2 className="text-lg font-bold text-gray-900 mb-4">01. 자산 포트폴리오 입력</h2>
 
           {/* 가구 정보 */}
