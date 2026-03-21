@@ -1,7 +1,9 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { calculateLawyerFee, type LawyerFeeResult } from '../utils/lawyerFee'
 import { formatKoreanAmount } from '../utils/currency'
 import ShareButtons from '../components/ShareButtons'
+import PropertyTaxBanner from '../components/PropertyTaxBanner'
+import CaptureButtons from '../components/CaptureButtons'
 
 type ContractType = 'sale' | 'jeonse' | 'monthly'
 type PropertyType = 'house' | 'officetel' | 'saleLot' | 'etc'
@@ -49,6 +51,8 @@ function ToolsList() {
             부동산 거래에 필요한 각종 비용을 계산하세요
           </p>
         </div>
+
+        <PropertyTaxBanner />
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           <button
@@ -112,6 +116,7 @@ function ToolsList() {
 
 // 중개보수 계산기
 function BrokerageFeeCalculator() {
+  const resultRef = useRef<HTMLDivElement>(null)
   const [activeTab, setActiveTab] = useState<'explanation' | 'calculator' | 'regionalRate' | 'rateTable'>('calculator')
   const [contractType, setContractType] = useState<ContractType>('sale')
   const [propertyType, setPropertyType] = useState<PropertyType>('house')
@@ -227,10 +232,12 @@ function BrokerageFeeCalculator() {
           부동산 도구 목록
         </button>
 
-        <div className="flex items-center gap-3 mb-6 sm:mb-8">
+        <div className="flex items-center gap-3 mb-4 sm:mb-6">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">중개보수 계산</h1>
           <ShareButtons url="https://moajim.com/?view=tools&sub=brokerage-fee" />
         </div>
+
+        <PropertyTaxBanner />
 
         {/* 탭 */}
         <div className="flex gap-1 sm:gap-2 mb-6 sm:mb-8 border-b border-gray-200 overflow-x-auto">
@@ -413,7 +420,10 @@ function BrokerageFeeCalculator() {
             {/* 결과 */}
             {result && (
               <div className="mt-8 space-y-4">
-                <div className="bg-gradient-to-br from-red-50 to-pink-50/30 rounded-2xl p-6 border border-red-100">
+                <div className="flex justify-end mb-2">
+                  <CaptureButtons targetRef={resultRef} fileName="moajim-중개보수-결과" />
+                </div>
+                <div ref={resultRef} className="bg-gradient-to-br from-red-50 to-pink-50/30 rounded-2xl p-6 border border-red-100">
                   <div className="text-center mb-6">
                     <p className="text-sm text-gray-600 mb-2">예상 중개보수{includeVat ? ' (부가세 포함)' : ''}</p>
                     <p className="text-4xl font-bold text-[#F15F5F]">
@@ -614,6 +624,7 @@ function BrokerageFeeCalculator() {
 
 // 법무사 보수료 계산기
 function LawyerFeeCalculator() {
+  const resultRef = useRef<HTMLDivElement>(null)
   const [activeTab, setActiveTab] = useState<'explanation' | 'stamp' | 'calc'>('calc')
   const [taxBase, setTaxBase] = useState<number>(0)
   const [includePublicCost, setIncludePublicCost] = useState(true)
@@ -638,10 +649,12 @@ function LawyerFeeCalculator() {
           부동산 도구 목록
         </button>
 
-        <div className="flex items-center gap-3 mb-6 sm:mb-8">
+        <div className="flex items-center gap-3 mb-4 sm:mb-6">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">법무사 보수료 계산</h1>
           <ShareButtons url="https://moajim.com/?view=tools&sub=lawyer-fee" />
         </div>
+
+        <PropertyTaxBanner />
 
         {/* 탭 */}
         <div className="flex gap-1 sm:gap-2 mb-6 sm:mb-8 border-b border-gray-200 overflow-x-auto">
@@ -812,7 +825,11 @@ function LawyerFeeCalculator() {
 
             {/* 결과 */}
             {result && (
-              <div className="bg-gray-50 rounded-2xl p-6 space-y-4">
+              <div className="space-y-4">
+                <div className="flex justify-end">
+                  <CaptureButtons targetRef={resultRef} fileName="moajim-법무사보수-결과" />
+                </div>
+              <div ref={resultRef} className="bg-gray-50 rounded-2xl p-6 space-y-4">
                 <h3 className="text-lg font-bold text-gray-900 mb-4">계산 결과</h3>
 
                 <div className="space-y-3">
@@ -870,6 +887,7 @@ function LawyerFeeCalculator() {
                     <span className="text-2xl font-bold text-[#F15F5F]">{formatWon(result.totalFee)}</span>
                   </div>
                 </div>
+              </div>
               </div>
             )}
           </div>

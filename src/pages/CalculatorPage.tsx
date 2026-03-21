@@ -1,8 +1,10 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { calculateGiftTax, type DonorType, type GiftTaxResult } from '../utils/giftTax'
 import { calculateInheritanceTax, type InheritanceTabType, type InheritanceTaxResult } from '../utils/inheritanceTax'
 import { formatKoreanAmount } from '../utils/currency'
 import ShareButtons from '../components/ShareButtons'
+import PropertyTaxBanner from '../components/PropertyTaxBanner'
+import CaptureButtons from '../components/CaptureButtons'
 
 interface CalculatorPageProps {
   initialSubView?: string
@@ -39,6 +41,8 @@ function CalculatorList() {
             필요한 세금을 쉽고 빠르게 계산하세요
           </p>
         </div>
+
+        <PropertyTaxBanner />
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           <button
@@ -91,6 +95,7 @@ function CalculatorList() {
 
 // 증여세 계산기
 function GiftTaxCalculator() {
+  const resultRef = useRef<HTMLDivElement>(null)
   const [activeTab, setActiveTab] = useState<'explanation' | 'gift' | 'burden' | 'acquisition'>('gift')
   const [donorType, setDonorType] = useState<DonorType>('spouse')
   const [giftAmount, setGiftAmount] = useState<number>(0)
@@ -145,10 +150,12 @@ function GiftTaxCalculator() {
           세금 계산기 목록
         </button>
 
-        <div className="flex items-center gap-3 mb-6 sm:mb-8">
+        <div className="flex items-center gap-3 mb-4 sm:mb-6">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">증여세 계산</h1>
           <ShareButtons url="https://moajim.com/?view=calculator&sub=gift-tax" />
         </div>
+
+        <PropertyTaxBanner />
 
         {/* 탭 */}
         <div className="flex gap-1 sm:gap-2 mb-6 sm:mb-8 border-b border-gray-200 overflow-x-auto">
@@ -489,7 +496,10 @@ function GiftTaxCalculator() {
             {/* 결과 */}
             {result && (
               <div className="mt-8 space-y-4">
-                <div className="bg-gradient-to-br from-red-50 to-pink-50/30 rounded-2xl p-6 border border-red-100">
+                <div className="flex justify-end mb-2">
+                  <CaptureButtons targetRef={resultRef} fileName="moajim-증여세-결과" />
+                </div>
+                <div ref={resultRef} className="bg-gradient-to-br from-red-50 to-pink-50/30 rounded-2xl p-6 border border-red-100">
                   <div className="text-center mb-6">
                     <p className="text-sm text-gray-600 mb-2">예상 증여세</p>
                     <p className="text-4xl font-bold text-[#F15F5F]">
@@ -678,6 +688,7 @@ function GiftTaxCalculator() {
 
 // 상속세 계산기
 function InheritanceTaxCalculator() {
+  const resultRef = useRef<HTMLDivElement>(null)
   const [activeTab, setActiveTab] = useState<InheritanceTabType>('spouse-simple')
 
   // 상속 정보
@@ -767,10 +778,12 @@ function InheritanceTaxCalculator() {
           세금 계산기 목록
         </button>
 
-        <div className="flex items-center gap-3 mb-6 sm:mb-8">
+        <div className="flex items-center gap-3 mb-4 sm:mb-6">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">상속세 계산</h1>
           <ShareButtons url="https://moajim.com/?view=calculator&sub=inheritance-tax" />
         </div>
+
+        <PropertyTaxBanner />
 
         {/* 탭 */}
         <div className="flex gap-1 sm:gap-2 mb-6 sm:mb-8 border-b border-gray-200 overflow-x-auto">
@@ -1149,7 +1162,10 @@ function InheritanceTaxCalculator() {
           {/* 결과 */}
           {result && (
             <div className="mt-8 space-y-4">
-              <div className="bg-gradient-to-br from-red-50 to-pink-50/30 rounded-2xl p-6 border border-red-100">
+              <div className="flex justify-end mb-2">
+                <CaptureButtons targetRef={resultRef} fileName="moajim-상속세-결과" />
+              </div>
+              <div ref={resultRef} className="bg-gradient-to-br from-red-50 to-pink-50/30 rounded-2xl p-6 border border-red-100">
                 <div className="text-center mb-6">
                   <p className="text-sm text-gray-600 mb-2">예상 상속세</p>
                   <p className="text-4xl font-bold text-[#F15F5F]">

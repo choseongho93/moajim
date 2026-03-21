@@ -6,9 +6,12 @@ import PortfolioPage from './pages/PortfolioPage'
 import CalculatorPage from './pages/CalculatorPage'
 import ToolsPage from './pages/ToolsPage'
 import PrivacyPage from './pages/PrivacyPage'
+import PropertyTaxPage from './pages/PropertyTaxPage'
+
+type ViewType = 'home' | 'portfolio' | 'calculator' | 'tools' | 'privacy' | 'property-tax'
 
 function App() {
-  const [activeView, setActiveView] = useState<'home' | 'portfolio' | 'calculator' | 'tools' | 'privacy'>('home')
+  const [activeView, setActiveView] = useState<ViewType>('home')
   const [subView, setSubView] = useState<string>('')
 
   // URL 파라미터 기반 라우팅
@@ -20,8 +23,8 @@ function App() {
     // 브라우저 뒤로가기/앞으로가기 시에도 스크롤 상단으로
     window.scrollTo({ top: 0, behavior: 'smooth' })
 
-    if (view === 'portfolio' || view === 'calculator' || view === 'tools' || view === 'privacy') {
-      setActiveView(view as 'home' | 'portfolio' | 'calculator' | 'tools' | 'privacy')
+    if (view === 'portfolio' || view === 'calculator' || view === 'tools' || view === 'privacy' || view === 'property-tax') {
+      setActiveView(view as ViewType)
       setSubView(sub || '')
     } else {
       setActiveView('home')
@@ -45,7 +48,7 @@ function App() {
     }
   }, [])
 
-  const navigateTo = (view: 'home' | 'portfolio' | 'calculator' | 'tools' | 'privacy', sub?: string) => {
+  const navigateTo = (view: ViewType, sub?: string) => {
     setActiveView(view)
     setSubView(sub || '')
 
@@ -71,6 +74,7 @@ function App() {
         {activeView === 'calculator' && <CalculatorPage key={subView} initialSubView={subView} />}
         {activeView === 'tools' && <ToolsPage key={subView} initialSubView={subView} />}
         {activeView === 'privacy' && <PrivacyPage />}
+        {activeView === 'property-tax' && <PropertyTaxPage />}
       </main>
 
       <Footer onNavigate={navigateTo} />

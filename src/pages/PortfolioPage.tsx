@@ -6,6 +6,7 @@ import { getCryptoPrices, CRYPTO_LIST } from '../api/prices'
 import { searchRealEstate, parseDealAmount, getDongsByLawdCd, getApartmentsByDong, getAreasByApartment, getCitiesFromAPI, getDistrictsFromAPI } from '../api/realestate'
 import Toast from '../components/Toast'
 import ShareButtons from '../components/ShareButtons'
+import PropertyTaxBanner from '../components/PropertyTaxBanner'
 import LoadingOverlay from '../components/LoadingOverlay'
 
 interface PortfolioPageProps {
@@ -502,10 +503,17 @@ function AssetInputView({
       />
       <div className="max-w-4xl mx-auto">
 
+        <PropertyTaxBanner />
+
         <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-6">
           <div className="pb-5 border-b border-gray-100">
-            <h2 className="text-2xl font-bold text-gray-900">자산 입력</h2>
-            <p className="text-sm text-gray-500 mt-1">보유하신 자산을 입력하고 분석해보세요</p>
+            <div className="flex items-start justify-between flex-wrap gap-3">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">자산 입력</h2>
+                <p className="text-sm text-gray-500 mt-1">보유하신 자산을 입력하고 분석해보세요</p>
+              </div>
+              <ShareButtons url="https://moajim.com/?view=portfolio&sub=analysis" title="자산 분석하기 - 모아짐" />
+            </div>
           </div>
 
           <div className="mt-5">

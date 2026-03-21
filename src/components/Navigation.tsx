@@ -1,9 +1,9 @@
 import { useState, useRef } from 'react'
 
 interface NavigationProps {
-  activeView: 'home' | 'portfolio' | 'calculator' | 'tools'
+  activeView: string
   activeSubView?: string
-  onNavigate: (view: 'home' | 'portfolio' | 'calculator' | 'tools', subView?: string) => void
+  onNavigate: (view: 'home' | 'portfolio' | 'calculator' | 'tools' | 'property-tax', subView?: string) => void
 }
 
 export default function Navigation({ activeView, activeSubView, onNavigate }: NavigationProps) {
@@ -54,7 +54,7 @@ export default function Navigation({ activeView, activeSubView, onNavigate }: Na
     }, 200)
   }
 
-  const handleNavigation = (view: 'home' | 'portfolio' | 'calculator' | 'tools', subView?: string) => {
+  const handleNavigation = (view: 'home' | 'portfolio' | 'calculator' | 'tools' | 'property-tax', subView?: string) => {
     onNavigate(view, subView)
     setMobileMenuOpen(false)
   }
@@ -174,7 +174,7 @@ export default function Navigation({ activeView, activeSubView, onNavigate }: Na
               <button
                 onClick={() => handleNavigation('tools')}
                 className={`${
-                  activeView === 'tools' ? 'text-[#F15F5F] bg-red-50 rounded-lg' : 'text-gray-400'
+                  activeView === 'tools' || activeView === 'property-tax' ? 'text-[#F15F5F] bg-red-50 rounded-lg' : 'text-gray-400'
                 } hover:text-[#F15F5F] hover:bg-red-50 hover:rounded-lg transition-colors text-[15px] font-medium flex items-center gap-1 px-3 py-1.5`}
               >
                 부동산 도구
@@ -184,7 +184,17 @@ export default function Navigation({ activeView, activeSubView, onNavigate }: Na
               </button>
 
               {showToolsMenu && (
-                <div className="absolute top-full left-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50">
+                <div className="absolute top-full left-0 mt-2 w-52 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50">
+                  <button
+                    onClick={() => handleNavigation('property-tax')}
+                    className={`w-full text-left px-4 py-3 text-sm transition-colors flex items-center justify-between ${
+                      activeView === 'property-tax' ? 'bg-red-50 text-[#F15F5F] font-medium' : 'text-gray-700 hover:bg-red-50 hover:text-[#F15F5F]'
+                    }`}
+                  >
+                    2026 보유세 예측하기
+                    <span className="text-[10px] bg-yellow-400 text-yellow-900 px-1.5 py-0.5 rounded-full font-bold">HOT</span>
+                  </button>
+                  <div className="border-t border-gray-100 my-1"></div>
                   <button
                     onClick={() => handleNavigation('tools', 'brokerage-fee')}
                     className={`w-full text-left px-4 py-3 text-sm transition-colors ${
@@ -288,6 +298,13 @@ export default function Navigation({ activeView, activeSubView, onNavigate }: Na
                 부동산 도구
               </button>
               <div className="pl-4 space-y-1">
+                <button
+                  onClick={() => handleNavigation('property-tax')}
+                  className="w-full text-left px-4 py-2 text-sm text-gray-600 hover:bg-red-50 hover:text-[#F15F5F] rounded-lg transition-colors flex items-center justify-between"
+                >
+                  2026 보유세 예측하기
+                  <span className="text-[10px] bg-yellow-400 text-yellow-900 px-1.5 py-0.5 rounded-full font-bold">HOT</span>
+                </button>
                 <button
                   onClick={() => handleNavigation('tools', 'brokerage-fee')}
                   className="w-full text-left px-4 py-2 text-sm text-gray-600 hover:bg-red-50 hover:text-[#F15F5F] rounded-lg transition-colors"
