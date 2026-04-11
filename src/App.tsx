@@ -7,8 +7,9 @@ import CalculatorPage from './pages/CalculatorPage'
 import ToolsPage from './pages/ToolsPage'
 import PrivacyPage from './pages/PrivacyPage'
 import PropertyTaxPage from './pages/PropertyTaxPage'
+import FinancePage from './pages/FinancePage'
 
-type ViewType = 'home' | 'portfolio' | 'calculator' | 'tools' | 'privacy' | 'property-tax'
+type ViewType = 'home' | 'portfolio' | 'calculator' | 'tools' | 'privacy' | 'property-tax' | 'finance'
 
 function App() {
   const [activeView, setActiveView] = useState<ViewType>('home')
@@ -23,7 +24,7 @@ function App() {
     // 브라우저 뒤로가기/앞으로가기 시에도 스크롤 상단으로
     window.scrollTo({ top: 0, behavior: 'smooth' })
 
-    if (view === 'portfolio' || view === 'calculator' || view === 'tools' || view === 'privacy' || view === 'property-tax') {
+    if (view === 'portfolio' || view === 'calculator' || view === 'tools' || view === 'privacy' || view === 'property-tax' || view === 'finance') {
       setActiveView(view as ViewType)
       setSubView(sub || '')
     } else {
@@ -75,6 +76,7 @@ function App() {
         {activeView === 'tools' && <ToolsPage key={subView} initialSubView={subView} />}
         {activeView === 'privacy' && <PrivacyPage />}
         {activeView === 'property-tax' && <PropertyTaxPage />}
+        {activeView === 'finance' && <FinancePage key={subView} initialSubView={subView} />}
       </main>
 
       <Footer onNavigate={navigateTo} />

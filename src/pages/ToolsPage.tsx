@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react'
 import { calculateLawyerFee, type LawyerFeeResult } from '../utils/lawyerFee'
+import { calculateRentConversion, type ConversionMode, type RentConversionResult } from '../utils/rentConversion'
 import { formatKoreanAmount } from '../utils/currency'
 import ShareButtons from '../components/ShareButtons'
 import PropertyTaxBanner from '../components/PropertyTaxBanner'
@@ -29,6 +30,10 @@ export default function ToolsPage({ initialSubView }: ToolsPageProps) {
 
   if (initialSubView === 'lawyer-fee') {
     return <LawyerFeeCalculator />
+  }
+
+  if (initialSubView === 'rent-conversion') {
+    return <RentConversionCalculator />
   }
 
   return <ToolsList />
@@ -87,16 +92,21 @@ function ToolsList() {
             </p>
           </button>
 
-          <div className="text-left p-6 bg-gray-50 rounded-2xl border-2 border-gray-200 opacity-60">
+          <button
+            onClick={() => navigateTo('rent-conversion')}
+            className="group text-left p-6 bg-white rounded-2xl border-2 border-gray-200 hover:border-[#F15F5F] transition-all hover:shadow-lg"
+          >
             <div className="flex items-center justify-between mb-4">
               <span className="text-4xl">🔄</span>
-              <span className="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded-full font-medium">준비중</span>
+              <svg className="w-6 h-6 text-gray-300 group-hover:text-[#F15F5F] group-hover:translate-x-1 transition-all" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
             </div>
             <h3 className="text-xl font-bold text-gray-900 mb-2">전월세 전환 계산기</h3>
             <p className="text-sm text-gray-600 leading-relaxed">
               전세와 월세 간 전환 시 적정 보증금·월세를 계산합니다.
             </p>
-          </div>
+          </button>
 
           <div className="text-left p-6 bg-gray-50 rounded-2xl border-2 border-gray-200 opacity-60">
             <div className="flex items-center justify-between mb-4">
@@ -900,6 +910,228 @@ function LawyerFeeCalculator() {
             본 계산기는 소유권이전등기 기준 대략적인 금액을 예측하는 참고용입니다.
             실제 법무사 보수는 사안의 복잡도, 지역 등에 따라 달라질 수 있습니다.
           </p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// 전월세 전환 계산기
+function RentConversionCalculator() {
+  const resultRef = useRef<HTMLDivElement>(null)
+  const [activeTab, setActiveTab] = useState<'explanation' | 'usage' | 'rate-info'>('explanation')
+  const [mode, setMode] = useState<ConversionMode>('jeonse-to-wolse')
+  const [conversionRate, setConversionRate] = useState<number>(4.5)
+  const [jeonseDeposit, setJeonseDeposit] = useState<number>(0)
+  const [wolseDeposit, setWolseDeposit] = useState<number>(0)
+  const [monthlyRent, setMonthlyRent] = useState<number>(0)
+  const [result, setResult] = useState<RentConversionResult | null>(null)
+
+  const handleCalculate = () => {
+    const r = calculateRentConversion({ mode, conversionRate, jeonseDeposit, wolseDeposit, monthlyRent })
+    setResult(r)
+    if (r) setTimeout(() => { resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }, 100)
+  }
+
+  const handleModeChange = (newMode: ConversionMode) => {
+    setMode(newMode)
+    setResult(null)
+  }
+
+  const fmt = (v: number) => {
+    if (v === 0) return '0원'
+    const rounded = Math.round(v * 10000)
+    return rounded.toLocaleString() + '원'
+  }
+
+  // mode에 따라 어떤 필드가 계산 결과인지 결정
+  const isRateDisabled = mode !== 'conversion-rate'
+  const isJeonseResult = mode === 'wolse-to-jeonse'
+  const isMonthlyResult = mode === 'jeonse-to-wolse'
+  const isRateResult = mode === 'conversion-rate'
+
+  return (
+    <div className="min-h-screen bg-white py-6 sm:py-12 px-4 sm:px-6">
+      <div className="max-w-4xl mx-auto">
+        <button onClick={() => { window.location.href = '/?view=tools' }} className="flex items-center gap-2 text-gray-500 hover:text-gray-900 mb-4 sm:mb-6 transition-colors text-sm">
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+          부동산 도구 목록
+        </button>
+
+        <div className="flex items-center gap-3 mb-4 sm:mb-6">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">전월세 전환 계산</h1>
+          <ShareButtons url="https://moajim.com/?view=tools&sub=rent-conversion" />
+        </div>
+
+        {/* 탭 */}
+        <div className="flex gap-1 sm:gap-2 mb-6 sm:mb-8 border-b border-gray-200 overflow-x-auto">
+          {([
+            { key: 'explanation', label: '설명' },
+            { key: 'usage', label: '사용법' },
+            { key: 'rate-info', label: '전월세 전환율' },
+          ] as const).map(tab => (
+            <button key={tab.key} onClick={() => setActiveTab(tab.key)}
+              className={`px-3 sm:px-4 py-2 sm:py-3 font-medium transition-colors whitespace-nowrap text-sm sm:text-base ${activeTab === tab.key ? 'text-[#F15F5F] border-b-2 border-[#F15F5F]' : 'text-gray-500 hover:text-gray-700'}`}>
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {activeTab === 'explanation' && (
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-6">
+            <p className="text-gray-700 leading-relaxed">
+              전세 ↔ 월세 전환 시 또는 보증금과 월세 조정 시 적정 금액을 계산합니다.
+              정해진 전월세전환율에 맞게 계산해 볼 수도 있고, 금액을 기준으로 전월세전환율을 계산해 볼수도 있습니다.
+            </p>
+          </div>
+        )}
+
+        {activeTab === 'usage' && (
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-6">
+            <p className="text-gray-700 leading-relaxed">
+              계산하고 싶은 옵션을 선택하고 나머지 입력 필드를 채우면, 계산하고 싶은 입력 필드의 값이 자동으로 계산되어 나옵니다.
+              예를 들어, 전월세전환율을 계산하고 싶으신 경우, 옵션을 "전월세전환율"로 선택한 후 전세보증금, 월세보증금 + 월세를 입력하면 몇 %의 전월세전환율이 적용된 것인지 알 수 있습니다.
+            </p>
+          </div>
+        )}
+
+        {activeTab === 'rate-info' && (
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-6">
+            <p className="text-gray-700 leading-relaxed">
+              현재 기준 전월세 전환율의 상한선은 주택은 4.5%, 상가는 11.25%입니다.
+              기준 금리에 따라서 자주 변경되므로 한국은행 기준금리를 확인해주세요.
+            </p>
+          </div>
+        )}
+
+        <div className="space-y-6">
+          {/* 모드 선택 */}
+          <div>
+            <label className="block text-sm font-bold text-gray-900 mb-3">계산 옵션</label>
+            <div className="flex flex-wrap gap-2">
+              {([
+                { value: 'jeonse-to-wolse', label: '전세 → 월세' },
+                { value: 'wolse-to-jeonse', label: '월세 → 전세' },
+                { value: 'conversion-rate', label: '전월세전환율' },
+              ] as const).map(opt => (
+                <button key={opt.value} onClick={() => handleModeChange(opt.value)}
+                  className={`px-4 py-2 rounded-lg border-2 transition-colors ${mode === opt.value ? 'border-[#F15F5F] bg-red-50 text-[#F15F5F] font-medium' : 'border-gray-200 text-gray-700 hover:border-gray-300'}`}>
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* 전월세전환율 */}
+          <div>
+            <label className="block text-sm font-bold text-gray-900 mb-3">
+              전월세전환율
+              {isRateResult && <span className="text-xs text-[#F15F5F] ml-2">(계산 결과)</span>}
+            </label>
+            <div className="relative">
+              <input type="number" step="0.1" value={isRateResult ? '' : conversionRate || ''} onChange={(e) => setConversionRate(Number(e.target.value))}
+                disabled={isRateResult}
+                className={`w-full px-4 py-4 pr-16 rounded-xl border-2 focus:outline-none text-lg ${isRateResult ? 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed' : 'border-gray-200 focus:border-[#F15F5F]'}`}
+                placeholder={isRateResult ? '자동 계산됩니다' : '% 입력'} />
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">%</span>
+            </div>
+          </div>
+
+          {/* 전세보증금 */}
+          <div>
+            <label className="block text-sm font-bold text-gray-900 mb-3">
+              전세보증금
+              {isJeonseResult && <span className="text-xs text-[#F15F5F] ml-2">(계산 결과)</span>}
+            </label>
+            <div className="relative">
+              <input type="number" value={isJeonseResult ? '' : jeonseDeposit || ''} onChange={(e) => setJeonseDeposit(Number(e.target.value))}
+                disabled={isJeonseResult}
+                className={`w-full px-4 py-4 pr-16 rounded-xl border-2 focus:outline-none text-lg ${isJeonseResult ? 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed' : 'border-gray-200 focus:border-[#F15F5F]'}`}
+                placeholder={isJeonseResult ? '자동 계산됩니다' : '금액 입력'} />
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">만원</span>
+            </div>
+            {!isJeonseResult && jeonseDeposit > 0 && <p className="text-xs text-[#F15F5F] mt-1">= {formatKoreanAmount(jeonseDeposit)}</p>}
+          </div>
+
+          {/* 월세보증금 */}
+          <div>
+            <label className="block text-sm font-bold text-gray-900 mb-3">월세보증금</label>
+            <div className="relative">
+              <input type="number" value={wolseDeposit || ''} onChange={(e) => setWolseDeposit(Number(e.target.value))}
+                className="w-full px-4 py-4 pr-16 rounded-xl border-2 border-gray-200 focus:border-[#F15F5F] focus:outline-none text-lg"
+                placeholder="금액 입력" />
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">만원</span>
+            </div>
+            {wolseDeposit > 0 && <p className="text-xs text-[#F15F5F] mt-1">= {formatKoreanAmount(wolseDeposit)}</p>}
+          </div>
+
+          {/* 월세 */}
+          <div>
+            <label className="block text-sm font-bold text-gray-900 mb-3">
+              월세
+              {isMonthlyResult && <span className="text-xs text-[#F15F5F] ml-2">(계산 결과)</span>}
+            </label>
+            <div className="relative">
+              <input type="number" value={isMonthlyResult ? '' : monthlyRent || ''} onChange={(e) => setMonthlyRent(Number(e.target.value))}
+                disabled={isMonthlyResult}
+                className={`w-full px-4 py-4 pr-16 rounded-xl border-2 focus:outline-none text-lg ${isMonthlyResult ? 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed' : 'border-gray-200 focus:border-[#F15F5F]'}`}
+                placeholder={isMonthlyResult ? '자동 계산됩니다' : '금액 입력'} />
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">만원</span>
+            </div>
+            {!isMonthlyResult && monthlyRent > 0 && <p className="text-xs text-[#F15F5F] mt-1">= {formatKoreanAmount(monthlyRent)}</p>}
+          </div>
+
+          {/* 계산 버튼 */}
+          <button onClick={handleCalculate} className="w-full py-4 bg-[#F15F5F] text-white rounded-xl font-bold text-lg hover:bg-[#E14E4E] transition-colors">
+            전월세 전환 계산
+          </button>
+
+          {/* 결과 */}
+          {result && (
+            <div ref={resultRef} className="mt-8 space-y-4">
+              <div className="flex justify-end mb-2">
+                <CaptureButtons targetRef={resultRef} fileName="moajim-전월세전환-결과" />
+              </div>
+              <div className="bg-gradient-to-br from-red-50 to-pink-50/30 rounded-2xl p-6 border border-red-100">
+                <h3 className="text-lg font-bold text-gray-900 mb-4">전월세 전환 결과</h3>
+                <div className="space-y-3 text-sm">
+                  <div className={`flex justify-between ${isRateResult ? 'font-bold' : ''}`}>
+                    <span className="text-gray-600">전월세전환율</span>
+                    <span className={isRateResult ? 'text-[#F15F5F] text-base' : 'font-medium'}>{result.conversionRate}%</span>
+                  </div>
+                  <div className="h-px bg-red-100 my-1" />
+                  <div className={`flex justify-between ${isJeonseResult ? 'font-bold' : ''}`}>
+                    <span className="text-gray-600">전세보증금</span>
+                    <span className={isJeonseResult ? 'text-[#F15F5F] text-base' : 'font-medium'}>{fmt(result.jeonseDeposit)}</span>
+                  </div>
+                  <div className="h-px bg-red-100 my-1" />
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">월세보증금</span>
+                    <span className="font-medium">{fmt(result.wolseDeposit)}</span>
+                  </div>
+                  <div className={`flex justify-between ${isMonthlyResult ? 'font-bold' : ''}`}>
+                    <span className="text-gray-600">월세</span>
+                    <span className={isMonthlyResult ? 'text-[#F15F5F] text-base' : 'font-medium'}>{fmt(result.monthlyRent)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">연 월세</span>
+                    <span className="font-medium">{fmt(result.yearlyRent)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 참고사항 */}
+          <div className="mt-8 bg-red-50 border border-red-200 rounded-xl p-6">
+            <h3 className="font-bold text-gray-900 mb-3">⚠️ 참고사항</h3>
+            <ul className="text-sm text-gray-700 leading-relaxed space-y-1">
+              <li>나라에서 정한 전월세전환율은 지역/시기/종류별로 계속 바뀝니다.</li>
+              <li>현재 기준 전월세 전환율 상한: 주택 4.5%, 상가 11.25%</li>
+              <li>전월세전환율 = 기준금리(2.75%) + 대통령령 가산이율(1.75%)</li>
+              <li>본 계산기는 참고용이며, 실제 계약 시 임대인·임차인 간 협의에 따릅니다.</li>
+            </ul>
+          </div>
         </div>
       </div>
     </div>

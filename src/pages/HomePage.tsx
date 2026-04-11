@@ -2,7 +2,7 @@
 // import AdInfeed from '../components/AdInfeed'
 
 interface HomePageProps {
-  navigateTo: (view: 'home' | 'portfolio' | 'calculator' | 'tools' | 'property-tax', subView?: string) => void
+  navigateTo: (view: 'home' | 'portfolio' | 'calculator' | 'tools' | 'property-tax' | 'finance', subView?: string) => void
 }
 
 export default function HomePage({ navigateTo }: HomePageProps) {
@@ -136,23 +136,31 @@ export default function HomePage({ navigateTo }: HomePageProps) {
               desc="부동산 등기 시 법무사 기본보수, 부가세, 인지세 등을 계산합니다"
             />
 
-            {/* 7. 취득세 계산기 - 준비중 */}
-            <ToolCardDisabled
+            {/* 7. 취득세 계산기 */}
+            <ToolCard
+              onClick={() => navigateTo('calculator', 'acquisition-tax')}
+              icon={<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />}
               title="취득세 계산기"
               desc="부동산 구매 시 내야 하는 취득세를 간편하게 계산합니다"
             />
 
-            {/* 8. 양도세 계산기 - 준비중 */}
-            <ToolCardDisabled
-              title="양도세 계산기"
-              desc="부동산 매도 시 발생하는 양도소득세를 계산합니다"
+            {/* 8. 대출 이자 계산기 */}
+            <ToolCard
+              onClick={() => navigateTo('finance', 'loan-interest')}
+              icon={<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />}
+              title="대출 이자 계산기"
+              desc="상환방법별 월 상환금과 총 이자를 계산합니다"
             />
 
-            {/* 9. 전월세 전환 계산기 - 준비중 */}
-            <ToolCardDisabled
-              title="전월세 전환 계산기"
-              desc="전세와 월세 간 전환 시 적정 보증금·월세를 계산합니다"
+            {/* 9. 담보 대출 가능액 */}
+            <ToolCard
+              onClick={() => navigateTo('finance', 'mortgage-loan')}
+              icon={<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />}
+              title="담보 대출 가능액"
+              desc="지역별 LTV 기준으로 담보 대출 가능 금액을 계산합니다"
             />
+
+
           </div>
         </div>
       </section>

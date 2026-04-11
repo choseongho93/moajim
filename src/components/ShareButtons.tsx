@@ -39,6 +39,10 @@ const PAGE_META: Record<string, { title: string; description: string }> = {
     title: '상속세 계산기 - 모아짐',
     description: '상속세를 쉽고 빠르게 계산해보세요',
   },
+  'view=calculator&sub=holding-tax': {
+    title: '보유세 계산기 - 모아짐',
+    description: '재산세와 종합부동산세를 쉽고 빠르게 계산해보세요',
+  },
   'view=tools&sub=brokerage-fee': {
     title: '중개보수 계산기 - 모아짐',
     description: '부동산 중개수수료를 쉽고 빠르게 계산해보세요',
@@ -46,6 +50,30 @@ const PAGE_META: Record<string, { title: string; description: string }> = {
   'view=tools&sub=lawyer-fee': {
     title: '법무사 보수료 계산기 - 모아짐',
     description: '부동산 등기 법무사 비용을 계산해보세요',
+  },
+  'view=tools&sub=rent-conversion': {
+    title: '전월세 전환 계산기 - 모아짐',
+    description: '전세 ↔ 월세 전환 적정 금액을 계산해보세요',
+  },
+  'view=calculator&sub=acquisition-tax': {
+    title: '취득세 계산기 - 모아짐',
+    description: '부동산 취득세를 쉽고 빠르게 계산해보세요',
+  },
+  'view=calculator&sub=capital-gains-tax': {
+    title: '양도소득세 계산기 - 모아짐',
+    description: '양도소득세를 쉽고 빠르게 계산해보세요',
+  },
+  'view=finance&sub=loan-interest': {
+    title: '대출 이자 계산기 - 모아짐',
+    description: '대출 이자와 월 상환금을 쉽고 빠르게 계산해보세요',
+  },
+  'view=finance&sub=savings-interest': {
+    title: '예적금 이자 계산기 - 모아짐',
+    description: '예금·적금 이자 수익을 단리/복리로 계산해보세요',
+  },
+  'view=finance&sub=mortgage-loan': {
+    title: '담보 대출 가능액 계산기 - 모아짐',
+    description: 'LTV 기준 담보 대출 가능 금액을 계산해보세요',
   },
   'view=portfolio': {
     title: '자산 포트폴리오 분석 - 모아짐',

@@ -12,10 +12,12 @@
  * 8. 납부세액 = (산출세액 + 할증) - 신고세액공제(3%)
  */
 
-export type InheritanceTabType = 'spouse-simple' | 'spouse-detail' | 'no-spouse'
+export type SpouseType = 'spouse-yes' | 'spouse-inherits' | 'no-spouse'
+export type DeductionType = 'lump-sum' | 'personal'
 
 export interface InheritanceTaxInput {
-  tabType: InheritanceTabType
+  spouseType: SpouseType       // 배우자 유/유(상속)/무
+  deductionType: DeductionType // 일괄공제/인적공제
   inheritanceAmount: number    // 상속재산 (만원)
   funeralExpense: number       // 장례비용 (만원)
   spouseInheritance: number    // 배우자 실제 상속액 (만원)
@@ -170,7 +172,7 @@ export function calculateInheritanceTax(input: InheritanceTaxInput): Inheritance
   let personalDeduction = 0
   let lumpSumDeduction = 50000 // 일괄공제 5억
 
-  if (input.tabType === 'spouse-detail' || input.tabType === 'no-spouse') {
+  if (input.deductionType === 'personal') {
     personalDeduction = calculatePersonalDeduction({
       childrenCount: input.childrenCount,
       elderlyCount: input.elderlyCount,
@@ -183,7 +185,7 @@ export function calculateInheritanceTax(input: InheritanceTaxInput): Inheritance
   const basicPlusPersonal = basicDeduction + personalDeduction
   let generalDeduction: number
 
-  if (input.tabType === 'spouse-simple') {
+  if (input.deductionType === 'lump-sum') {
     generalDeduction = lumpSumDeduction
   } else {
     generalDeduction = Math.max(basicPlusPersonal, lumpSumDeduction)
@@ -194,9 +196,9 @@ export function calculateInheritanceTax(input: InheritanceTaxInput): Inheritance
 
   // ③ 배우자공제
   let spouseDeduction = 0
-  if (input.tabType === 'spouse-simple') {
+  if (input.spouseType === 'spouse-yes') {
     spouseDeduction = 50000
-  } else if (input.tabType === 'spouse-detail') {
+  } else if (input.spouseType === 'spouse-inherits') {
     spouseDeduction = calculateSpouseDeduction(
       taxableInheritance,
       input.spouseInheritance,

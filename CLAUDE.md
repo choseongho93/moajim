@@ -15,9 +15,51 @@ Moajim is a Korean asset portfolio analysis app with real estate price lookup vi
 
 ### Frontend
 - **Routing**: Query-string based SPA routing (no react-router). `App.tsx` reads `?view=` and `?sub=` params, uses `window.history.pushState` for navigation
-- **Pages**: HomePage, PortfolioPage, CalculatorPage (gift/inheritance tax), PrivacyPage
+- **Pages**: HomePage, PortfolioPage, CalculatorPage, ToolsPage, FinancePage, PropertyTaxPage, PrivacyPage
 - **Styling**: Tailwind CSS v4 with PostCSS. Brand color: `#F15F5F`
 - **API calls**: `src/api/` modules use `import.meta.env.DEV ? '/api' : 'https://moajim.com/api'` for URL switching
+
+### Frontend Routes (`?view=`)
+| view | Page | Description |
+|------|------|-------------|
+| `home` (default) | HomePage | Landing page with feature cards |
+| `calculator` | CalculatorPage | Tax calculators hub |
+| `tools` | ToolsPage | Real estate tools hub |
+| `finance` | FinancePage | Financial calculators hub |
+| `portfolio` | PortfolioPage | Asset portfolio analysis |
+| `property-tax` | PropertyTaxPage | 2026 보유세 예측 simulator |
+| `privacy` | PrivacyPage | Privacy policy |
+
+### Tax Calculators (`?view=calculator&sub=`)
+| sub | Calculator | Utility |
+|-----|-----------|---------|
+| `gift-tax` | 증여세 계산기 | `utils/giftTax.ts` |
+| `inheritance-tax` | 상속세 계산기 | `utils/inheritanceTax.ts` |
+| `acquisition-tax` | 취득세 계산기 | `utils/acquisitionTax.ts` |
+| `holding-tax` | 보유세 계산기 | `utils/holdingTax.ts` |
+| `capital-gains-tax` | 양도소득세 계산기 | `utils/capitalGainsTax.ts` |
+
+### Real Estate Tools (`?view=tools&sub=`)
+| sub | Tool | Utility |
+|-----|------|---------|
+| `brokerage-fee` | 중개보수 계산기 | (inline) |
+| `lawyer-fee` | 법무사 보수료 계산기 | `utils/lawyerFee.ts` |
+| `rent-conversion` | 전월세 전환 계산기 | `utils/rentConversion.ts` |
+
+### Financial Calculators (`?view=finance&sub=`)
+| sub | Calculator | Utility |
+|-----|-----------|---------|
+| `loan-interest` | 대출 이자 계산기 | `utils/loanInterest.ts` |
+| `mortgage-loan` | 담보 대출 가능액 | `utils/mortgageLoan.ts` |
+| `savings-interest` | 예적금 이자 계산기 | `utils/savingsInterest.ts` |
+
+### Components (`src/components/`)
+- `Navigation.tsx` — Header with desktop/mobile nav menus
+- `Footer.tsx` — Footer with links
+- `ShareButtons.tsx` — SNS sharing (URL copy, Kakao, Facebook, Naver) with `PAGE_META` mapping
+- `CaptureButtons.tsx` — Screenshot/image capture for results
+- `PropertyTaxBanner.tsx` — Banner promoting 보유세 simulator
+- `Toast.tsx`, `LoadingOverlay.tsx`, `AdBanner.tsx`, `AdInfeed.tsx`
 
 ### Worker API
 - Routes defined inline in `worker/index.ts` (regions/D1 routes) and in `worker/routes/` (portfolio, realestate, health)
@@ -63,3 +105,17 @@ For local development, run `npm run dev` and `npm run dev:worker` simultaneously
 - `GET /api/regions/apartments?lawdCd=&dong=` — Apartment list (D1, auto-populate from API)
 - `GET /api/regions/areas?lawdCd=&dong=&apt=` — Area list (D1, auto-populate from API)
 - `GET /api/admin/dong-count` — Dong count in D1
+
+## Calculator UI Patterns
+
+All calculators in `CalculatorPage.tsx` follow a consistent structure:
+- **Info tabs** at top (설명 / additional tabs) with blue info box
+- **Pill button groups** for mode selection (e.g., property type, spouse type)
+- **Checkbox options** in a flex-wrap row
+- **Input fields** with `만원` suffix and `formatKoreanAmount()` display
+- **Calculate button** (red `#F15F5F`)
+- **Result card** with gradient background, breakdown table, and `CaptureButtons`
+- **Reference table** (tax brackets) in blue info box with 검수 credit
+- **Warning box** in red
+- **ShareButtons** component for SNS sharing
+- Each calculator has a corresponding utility file in `src/utils/` with typed Input/Result interfaces

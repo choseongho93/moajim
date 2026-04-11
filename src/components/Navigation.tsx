@@ -3,17 +3,19 @@ import { useState, useRef } from 'react'
 interface NavigationProps {
   activeView: string
   activeSubView?: string
-  onNavigate: (view: 'home' | 'portfolio' | 'calculator' | 'tools' | 'property-tax', subView?: string) => void
+  onNavigate: (view: 'home' | 'portfolio' | 'calculator' | 'tools' | 'property-tax' | 'finance', subView?: string) => void
 }
 
 export default function Navigation({ activeView, activeSubView, onNavigate }: NavigationProps) {
   const [showPortfolioMenu, setShowPortfolioMenu] = useState(false)
   const [showTaxMenu, setShowTaxMenu] = useState(false)
   const [showToolsMenu, setShowToolsMenu] = useState(false)
+  const [showFinanceMenu, setShowFinanceMenu] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const portfolioTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const taxTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const toolsTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const financeTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   const handlePortfolioMouseEnter = () => {
     if (portfolioTimeoutRef.current) {
@@ -54,7 +56,20 @@ export default function Navigation({ activeView, activeSubView, onNavigate }: Na
     }, 200)
   }
 
-  const handleNavigation = (view: 'home' | 'portfolio' | 'calculator' | 'tools' | 'property-tax', subView?: string) => {
+  const handleFinanceMouseEnter = () => {
+    if (financeTimeoutRef.current) {
+      clearTimeout(financeTimeoutRef.current)
+    }
+    setShowFinanceMenu(true)
+  }
+
+  const handleFinanceMouseLeave = () => {
+    financeTimeoutRef.current = setTimeout(() => {
+      setShowFinanceMenu(false)
+    }, 200)
+  }
+
+  const handleNavigation = (view: 'home' | 'portfolio' | 'calculator' | 'tools' | 'property-tax' | 'finance', subView?: string) => {
     onNavigate(view, subView)
     setMobileMenuOpen(false)
   }
@@ -141,25 +156,28 @@ export default function Navigation({ activeView, activeSubView, onNavigate }: Na
                     상속세 계산기
                   </button>
                   <button
-                    disabled
-                    className="w-full text-left px-4 py-3 text-sm text-gray-400 cursor-not-allowed flex items-center justify-between"
+                    onClick={() => handleNavigation('calculator', 'acquisition-tax')}
+                    className={`w-full text-left px-4 py-3 text-sm transition-colors ${
+                      activeView === 'calculator' && activeSubView === 'acquisition-tax' ? 'bg-red-50 text-[#F15F5F] font-medium' : 'text-gray-700 hover:bg-red-50 hover:text-[#F15F5F]'
+                    }`}
                   >
                     취득세 계산기
-                    <span className="text-xs bg-gray-100 px-2 py-0.5 rounded-full">준비중</span>
                   </button>
                   <button
-                    disabled
-                    className="w-full text-left px-4 py-3 text-sm text-gray-400 cursor-not-allowed flex items-center justify-between"
+                    onClick={() => handleNavigation('calculator', 'capital-gains-tax')}
+                    className={`w-full text-left px-4 py-3 text-sm transition-colors ${
+                      activeView === 'calculator' && activeSubView === 'capital-gains-tax' ? 'bg-red-50 text-[#F15F5F] font-medium' : 'text-gray-700 hover:bg-red-50 hover:text-[#F15F5F]'
+                    }`}
                   >
                     양도세 계산기
-                    <span className="text-xs bg-gray-100 px-2 py-0.5 rounded-full">준비중</span>
                   </button>
                   <button
-                    disabled
-                    className="w-full text-left px-4 py-3 text-sm text-gray-400 cursor-not-allowed flex items-center justify-between"
+                    onClick={() => handleNavigation('calculator', 'holding-tax')}
+                    className={`w-full text-left px-4 py-3 text-sm transition-colors ${
+                      activeView === 'calculator' && activeSubView === 'holding-tax' ? 'bg-red-50 text-[#F15F5F] font-medium' : 'text-gray-700 hover:bg-red-50 hover:text-[#F15F5F]'
+                    }`}
                   >
-                    종부세 계산기
-                    <span className="text-xs bg-gray-100 px-2 py-0.5 rounded-full">준비중</span>
+                    보유세 계산기
                   </button>
                 </div>
               )}
@@ -212,11 +230,60 @@ export default function Navigation({ activeView, activeSubView, onNavigate }: Na
                     법무사 보수료
                   </button>
                   <button
-                    disabled
-                    className="w-full text-left px-4 py-3 text-sm text-gray-400 cursor-not-allowed flex items-center justify-between"
+                    onClick={() => handleNavigation('tools', 'rent-conversion')}
+                    className={`w-full text-left px-4 py-3 text-sm transition-colors ${
+                      activeView === 'tools' && activeSubView === 'rent-conversion' ? 'bg-red-50 text-[#F15F5F] font-medium' : 'text-gray-700 hover:bg-red-50 hover:text-[#F15F5F]'
+                    }`}
                   >
                     전월세 전환 계산기
-                    <span className="text-xs bg-gray-100 px-2 py-0.5 rounded-full">준비중</span>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* 금융계산 메뉴 */}
+            <div
+              className="relative"
+              onMouseEnter={handleFinanceMouseEnter}
+              onMouseLeave={handleFinanceMouseLeave}
+            >
+              <button
+                onClick={() => handleNavigation('finance')}
+                className={`${
+                  activeView === 'finance' ? 'text-[#F15F5F] bg-red-50 rounded-lg' : 'text-gray-400'
+                } hover:text-[#F15F5F] hover:bg-red-50 hover:rounded-lg transition-colors text-[15px] font-medium flex items-center gap-1 px-3 py-1.5`}
+              >
+                금융계산
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              {showFinanceMenu && (
+                <div className="absolute top-full left-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50">
+                  <button
+                    onClick={() => handleNavigation('finance', 'loan-interest')}
+                    className={`w-full text-left px-4 py-3 text-sm transition-colors ${
+                      activeView === 'finance' && activeSubView === 'loan-interest' ? 'bg-red-50 text-[#F15F5F] font-medium' : 'text-gray-700 hover:bg-red-50 hover:text-[#F15F5F]'
+                    }`}
+                  >
+                    대출 이자 계산기
+                  </button>
+                  <button
+                    onClick={() => handleNavigation('finance', 'savings-interest')}
+                    className={`w-full text-left px-4 py-3 text-sm transition-colors ${
+                      activeView === 'finance' && activeSubView === 'savings-interest' ? 'bg-red-50 text-[#F15F5F] font-medium' : 'text-gray-700 hover:bg-red-50 hover:text-[#F15F5F]'
+                    }`}
+                  >
+                    예적금 이자 계산기
+                  </button>
+                  <button
+                    onClick={() => handleNavigation('finance', 'mortgage-loan')}
+                    className={`w-full text-left px-4 py-3 text-sm transition-colors ${
+                      activeView === 'finance' && activeSubView === 'mortgage-loan' ? 'bg-red-50 text-[#F15F5F] font-medium' : 'text-gray-700 hover:bg-red-50 hover:text-[#F15F5F]'
+                    }`}
+                  >
+                    담보 대출 가능액
                   </button>
                 </div>
               )}
@@ -281,11 +348,16 @@ export default function Navigation({ activeView, activeSubView, onNavigate }: Na
                   상속세 계산기
                 </button>
                 <button
-                  disabled
-                  className="w-full text-left px-4 py-2 text-sm text-gray-400 cursor-not-allowed flex items-center justify-between"
+                  onClick={() => handleNavigation('calculator', 'acquisition-tax')}
+                  className="w-full text-left px-4 py-2 text-sm text-gray-600 hover:bg-red-50 hover:text-[#F15F5F] rounded-lg transition-colors"
                 >
                   취득세 계산기
-                  <span className="text-xs bg-gray-100 px-2 py-0.5 rounded-full">준비중</span>
+                </button>
+                <button
+                  onClick={() => handleNavigation('calculator', 'holding-tax')}
+                  className="w-full text-left px-4 py-2 text-sm text-gray-600 hover:bg-red-50 hover:text-[#F15F5F] rounded-lg transition-colors"
+                >
+                  보유세 계산기
                 </button>
               </div>
 
@@ -318,11 +390,39 @@ export default function Navigation({ activeView, activeSubView, onNavigate }: Na
                   법무사 보수료
                 </button>
                 <button
-                  disabled
-                  className="w-full text-left px-4 py-2 text-sm text-gray-400 cursor-not-allowed flex items-center justify-between"
+                  onClick={() => handleNavigation('tools', 'rent-conversion')}
+                  className="w-full text-left px-4 py-2 text-sm text-gray-600 hover:bg-red-50 hover:text-[#F15F5F] rounded-lg transition-colors"
                 >
                   전월세 전환 계산기
-                  <span className="text-xs bg-gray-100 px-2 py-0.5 rounded-full">준비중</span>
+                </button>
+              </div>
+
+              <button
+                onClick={() => handleNavigation('finance')}
+                className={`w-full text-left px-4 py-3 rounded-lg font-medium transition-colors ${
+                  activeView === 'finance' ? 'bg-red-50 text-[#F15F5F]' : 'text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                금융계산
+              </button>
+              <div className="pl-4 space-y-1">
+                <button
+                  onClick={() => handleNavigation('finance', 'loan-interest')}
+                  className="w-full text-left px-4 py-2 text-sm text-gray-600 hover:bg-red-50 hover:text-[#F15F5F] rounded-lg transition-colors"
+                >
+                  대출 이자 계산기
+                </button>
+                <button
+                  onClick={() => handleNavigation('finance', 'savings-interest')}
+                  className="w-full text-left px-4 py-2 text-sm text-gray-600 hover:bg-red-50 hover:text-[#F15F5F] rounded-lg transition-colors"
+                >
+                  예적금 이자 계산기
+                </button>
+                <button
+                  onClick={() => handleNavigation('finance', 'mortgage-loan')}
+                  className="w-full text-left px-4 py-2 text-sm text-gray-600 hover:bg-red-50 hover:text-[#F15F5F] rounded-lg transition-colors"
+                >
+                  담보 대출 가능액
                 </button>
               </div>
             </div>
