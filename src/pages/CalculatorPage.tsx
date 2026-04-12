@@ -2270,6 +2270,8 @@ function HoldingTaxCalculator() {
           <ShareButtons url="https://moajim.com/?view=calculator&sub=holding-tax" />
         </div>
 
+        <PropertyTaxBanner />
+
         {/* 탭 */}
         <div className="flex gap-1 sm:gap-2 mb-6 sm:mb-8 border-b border-gray-200 overflow-x-auto">
           {([

@@ -75,6 +75,26 @@ const PAGE_META: Record<string, { title: string; description: string }> = {
     title: '담보 대출 가능액 계산기 - 모아짐',
     description: 'LTV 기준 담보 대출 가능 금액을 계산해보세요',
   },
+  'view=finance&sub=early-repayment': {
+    title: '중도상환수수료 계산기 - 모아짐',
+    description: '대출 중도상환 시 발생하는 수수료를 빠르게 계산해보세요',
+  },
+  'view=finance&sub=loan-refinance': {
+    title: '대출 대환 계산기 - 모아짐',
+    description: '대출 대환 시 변경되는 이자를 비교해보세요',
+  },
+  'view=finance&sub=estimated-income': {
+    title: '추정소득 계산기 - 모아짐',
+    description: '인정소득·신고소득 기준으로 추정 연소득을 계산해보세요',
+  },
+  'view=finance&sub=auction-loan': {
+    title: '경락잔금대출 한도 계산기 - 모아짐',
+    description: '경매 낙찰 시 금융권별 대출 가능 한도를 계산해보세요',
+  },
+  'view=finance&sub=jeonse-guarantee': {
+    title: '전세보증보험 계산기 - 모아짐',
+    description: '전세금반환보증보험 가입 가능 여부와 보증료를 계산해보세요',
+  },
   'view=portfolio': {
     title: '자산 포트폴리오 분석 - 모아짐',
     description: '내 자산을 분석하고 맞춤 투자 전략을 받아보세요',

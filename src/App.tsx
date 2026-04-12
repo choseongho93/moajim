@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { updateSeoMeta } from './utils/seo'
 import Navigation from './components/Navigation'
 import Footer from './components/Footer'
 import HomePage from './pages/HomePage'
@@ -31,6 +32,9 @@ function App() {
       setActiveView('home')
       setSubView('')
     }
+
+    // SEO 메타 태그 업데이트
+    updateSeoMeta()
   }
 
   useEffect(() => {
@@ -63,6 +67,9 @@ function App() {
     } else {
       window.history.pushState({}, '', `/?view=${view}`)
     }
+
+    // SEO 메타 태그 업데이트
+    updateSeoMeta()
   }
 
   return (

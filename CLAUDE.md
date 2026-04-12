@@ -52,6 +52,8 @@ Moajim is a Korean asset portfolio analysis app with real estate price lookup vi
 | `loan-interest` | 대출 이자 계산기 | `utils/loanInterest.ts` |
 | `mortgage-loan` | 담보 대출 가능액 | `utils/mortgageLoan.ts` |
 | `savings-interest` | 예적금 이자 계산기 | `utils/savingsInterest.ts` |
+| `early-repayment` | 중도상환수수료 계산기 | `utils/earlyRepaymentFee.ts` |
+| `auction-loan` | 경락잔금대출 한도 | `utils/auctionLoan.ts` |
 
 ### Components (`src/components/`)
 - `Navigation.tsx` — Header with desktop/mobile nav menus

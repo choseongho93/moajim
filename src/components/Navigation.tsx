@@ -285,6 +285,46 @@ export default function Navigation({ activeView, activeSubView, onNavigate }: Na
                   >
                     담보 대출 가능액
                   </button>
+                  <button
+                    onClick={() => handleNavigation('finance', 'early-repayment')}
+                    className={`w-full text-left px-4 py-3 text-sm transition-colors ${
+                      activeView === 'finance' && activeSubView === 'early-repayment' ? 'bg-red-50 text-[#F15F5F] font-medium' : 'text-gray-700 hover:bg-red-50 hover:text-[#F15F5F]'
+                    }`}
+                  >
+                    중도상환수수료 계산기
+                  </button>
+                  <button
+                    onClick={() => handleNavigation('finance', 'loan-refinance')}
+                    className={`w-full text-left px-4 py-3 text-sm transition-colors ${
+                      activeView === 'finance' && activeSubView === 'loan-refinance' ? 'bg-red-50 text-[#F15F5F] font-medium' : 'text-gray-700 hover:bg-red-50 hover:text-[#F15F5F]'
+                    }`}
+                  >
+                    대출 대환 계산기
+                  </button>
+                  <button
+                    onClick={() => handleNavigation('finance', 'estimated-income')}
+                    className={`w-full text-left px-4 py-3 text-sm transition-colors ${
+                      activeView === 'finance' && activeSubView === 'estimated-income' ? 'bg-red-50 text-[#F15F5F] font-medium' : 'text-gray-700 hover:bg-red-50 hover:text-[#F15F5F]'
+                    }`}
+                  >
+                    추정소득 계산기
+                  </button>
+                  <button
+                    onClick={() => handleNavigation('finance', 'auction-loan')}
+                    className={`w-full text-left px-4 py-3 text-sm transition-colors ${
+                      activeView === 'finance' && activeSubView === 'auction-loan' ? 'bg-red-50 text-[#F15F5F] font-medium' : 'text-gray-700 hover:bg-red-50 hover:text-[#F15F5F]'
+                    }`}
+                  >
+                    경락잔금대출 한도
+                  </button>
+                  <button
+                    onClick={() => handleNavigation('finance', 'jeonse-guarantee')}
+                    className={`w-full text-left px-4 py-3 text-sm transition-colors ${
+                      activeView === 'finance' && activeSubView === 'jeonse-guarantee' ? 'bg-red-50 text-[#F15F5F] font-medium' : 'text-gray-700 hover:bg-red-50 hover:text-[#F15F5F]'
+                    }`}
+                  >
+                    전세보증보험 계산기
+                  </button>
                 </div>
               )}
             </div>
@@ -423,6 +463,36 @@ export default function Navigation({ activeView, activeSubView, onNavigate }: Na
                   className="w-full text-left px-4 py-2 text-sm text-gray-600 hover:bg-red-50 hover:text-[#F15F5F] rounded-lg transition-colors"
                 >
                   담보 대출 가능액
+                </button>
+                <button
+                  onClick={() => handleNavigation('finance', 'early-repayment')}
+                  className="w-full text-left px-4 py-2 text-sm text-gray-600 hover:bg-red-50 hover:text-[#F15F5F] rounded-lg transition-colors"
+                >
+                  중도상환수수료 계산기
+                </button>
+                <button
+                  onClick={() => handleNavigation('finance', 'loan-refinance')}
+                  className="w-full text-left px-4 py-2 text-sm text-gray-600 hover:bg-red-50 hover:text-[#F15F5F] rounded-lg transition-colors"
+                >
+                  대출 대환 계산기
+                </button>
+                <button
+                  onClick={() => handleNavigation('finance', 'estimated-income')}
+                  className="w-full text-left px-4 py-2 text-sm text-gray-600 hover:bg-red-50 hover:text-[#F15F5F] rounded-lg transition-colors"
+                >
+                  추정소득 계산기
+                </button>
+                <button
+                  onClick={() => handleNavigation('finance', 'auction-loan')}
+                  className="w-full text-left px-4 py-2 text-sm text-gray-600 hover:bg-red-50 hover:text-[#F15F5F] rounded-lg transition-colors"
+                >
+                  경락잔금대출 한도
+                </button>
+                <button
+                  onClick={() => handleNavigation('finance', 'jeonse-guarantee')}
+                  className="w-full text-left px-4 py-2 text-sm text-gray-600 hover:bg-red-50 hover:text-[#F15F5F] rounded-lg transition-colors"
+                >
+                  전세보증보험 계산기
                 </button>
               </div>
             </div>
