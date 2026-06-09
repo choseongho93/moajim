@@ -441,6 +441,8 @@ function injectSeo(html: string, seo: PageSeo, query: string): string {
   return html
 }
 
+const CRAWLER_UA_PATTERN = /bot|crawl|spider|slurp|googlebot|bingbot|naverbot|yeti|daumoa|kakaotalk-scrap|facebookexternalhit|twitterbot|slackbot|linkedinbot|whatsapp|telegrambot|discordbot|adsbot-google|mediapartners-google|applebot|baiduspider|yandexbot|duckduckbot/i
+
 export const onRequest: PagesFunction<{ ASSETS: Fetcher }> = async (context) => {
   const url = new URL(context.request.url)
 
@@ -451,6 +453,13 @@ export const onRequest: PagesFunction<{ ASSETS: Fetcher }> = async (context) => 
 
   // /api/* → Worker가 처리
   if (url.pathname.startsWith('/api/')) {
+    return context.next()
+  }
+
+  // 일반 브라우저 사용자 → 원본 index.html 그대로 (FOUC 방지)
+  // 크롤러/SNS 미리보기 봇만 SEO 콘텐츠 주입
+  const ua = context.request.headers.get('user-agent') || ''
+  if (!CRAWLER_UA_PATTERN.test(ua)) {
     return context.next()
   }
 
