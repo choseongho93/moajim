@@ -110,6 +110,11 @@ const PAGE_SEO: Record<string, { title: string; description: string; keywords?: 
     description: '전세보증보험(전세금반환보증) 보증료를 계산해보세요. HUG, SGI, HF 보증 기관별 보증료를 비교합니다.',
     keywords: '전세보증보험 계산기, 전세보증금반환보증, 전세보증료, HUG 보증료, SGI 보증료',
   },
+  'view=finance&sub=exchange-rate': {
+    title: '실시간 환율 계산기 - 모아짐',
+    description: '미국 달러, 일본 엔, 중국 위안, 유로 등 주요 18개국 통화의 실시간 환율을 한국 원화(KRW)로 변환합니다. 외화 ↔ 원화 양방향 환산.',
+    keywords: '환율 계산기, 실시간 환율, 달러 환율, 엔화 환율, 위안화 환율, 유로 환율, 외화 원화 환산',
+  },
 
   // 기타
   'view=portfolio': {

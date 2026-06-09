@@ -111,6 +111,7 @@ export default function HomePage({ navigateTo }: HomePageProps) {
             <MiniCard onClick={() => navigateTo('finance', 'estimated-income')} label="추정소득" />
             <MiniCard onClick={() => navigateTo('finance', 'auction-loan')} label="경락잔금대출 한도" />
             <MiniCard onClick={() => navigateTo('finance', 'jeonse-guarantee')} label="전세보증보험" />
+            <MiniCard onClick={() => navigateTo('finance', 'exchange-rate')} label="환율 계산기" badge="NEW" />
           </div>
         </div>
       </section>

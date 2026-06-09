@@ -95,6 +95,10 @@ const PAGE_META: Record<string, { title: string; description: string }> = {
     title: '전세보증보험 계산기 - 모아짐',
     description: '전세금반환보증보험 가입 가능 여부와 보증료를 계산해보세요',
   },
+  'view=finance&sub=exchange-rate': {
+    title: '실시간 환율 계산기 - 모아짐',
+    description: '주요국 통화의 실시간 환율을 한국 원화로 변환해보세요',
+  },
   'view=portfolio': {
     title: '자산 포트폴리오 분석 - 모아짐',
     description: '내 자산을 분석하고 맞춤 투자 전략을 받아보세요',

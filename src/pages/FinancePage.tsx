@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { calculateLoanInterest, type RepaymentMethod, type LoanResult } from '../utils/loanInterest'
 import { calculateMortgageLoan, type PropertyCategory, type RegulationRegion, type BuyerType, type DepositRegion, type MortgageLoanResult } from '../utils/mortgageLoan'
 import { calculateSavingsInterest, type SavingsResult } from '../utils/savingsInterest'
@@ -7,6 +7,8 @@ import { calculateAuctionLoan, type AuctionLoanMode, type AuctionLoanCriterion, 
 import { calculateLoanRefinance, type RefinanceRepaymentMethod, type RefinanceCompareResult } from '../utils/loanRefinance'
 import { calculateEstimatedIncome, type IncomeType, type RecognizedBasis, type DeclaredBasis, type SubscriberType, type EstimatedIncomeResult } from '../utils/estimatedIncome'
 import { calculateJeonseGuarantee, type DiscountType, type JeonseGuaranteeResult, type GuaranteeResult } from '../utils/jeonseGuarantee'
+import { CURRENCIES, getCurrency, toKrw, fromKrw, formatKrw, formatForeign, formatRate } from '../utils/exchangeRate'
+import { fetchExchangeRates } from '../api/exchange'
 import { formatKoreanAmount } from '../utils/currency'
 import ShareButtons from '../components/ShareButtons'
 import PropertyTaxBanner from '../components/PropertyTaxBanner'
@@ -47,6 +49,10 @@ export default function FinancePage({ initialSubView }: FinancePageProps) {
 
   if (initialSubView === 'jeonse-guarantee') {
     return <JeonseGuaranteeCalculator />
+  }
+
+  if (initialSubView === 'exchange-rate') {
+    return <ExchangeRateCalculator />
   }
 
   return <FinanceList />
@@ -198,6 +204,20 @@ function FinanceList() {
             <h3 className="text-xl font-bold text-gray-900 mb-2">전세보증보험 계산기</h3>
             <p className="text-sm text-gray-600 leading-relaxed">
               전세금반환보증보험 가입 가능 여부와 보증료를 계산합니다.
+            </p>
+          </button>
+
+          <button
+            onClick={() => navigateTo('exchange-rate')}
+            className="group text-left p-6 bg-white rounded-2xl border-2 border-gray-200 hover:border-[#F15F5F] transition-all hover:shadow-lg"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-4xl">💵</span>
+              <span className="text-[10px] font-bold rounded-full bg-blue-100 text-blue-600 px-2 py-0.5">NEW</span>
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">환율 계산기</h3>
+            <p className="text-sm text-gray-600 leading-relaxed">
+              주요국 통화의 실시간 환율을 원화로 변환합니다.
             </p>
           </button>
         </div>
@@ -2783,6 +2803,266 @@ function JeonseGuaranteeCalculator() {
               <li>부채비율은 (선순위채권 + 전세보증금) / 매매시세로 계산되며, 100%를 초과하면 가입이 제한됩니다.</li>
               <li>매매 시세는 KB시세, 한국부동산원 시세 등 공신력 있는 시세를 기준으로 입력해주세요.</li>
               <li>보증료율은 변경될 수 있으며, 정확한 보증료는 각 보증기관에서 확인하시기 바랍니다.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// 환율 계산기 (실시간)
+function ExchangeRateCalculator() {
+  const resultRef = useRef<HTMLDivElement>(null)
+  const [selectedCode, setSelectedCode] = useState<string>('USD')
+  const [foreignInput, setForeignInput] = useState<number>(1)
+  const [krwInput, setKrwInput] = useState<number>(0)
+  const [lastEdited, setLastEdited] = useState<'foreign' | 'krw'>('foreign')
+  const [rates, setRates] = useState<Record<string, number>>({})
+  const [fetchedAt, setFetchedAt] = useState<number>(0)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  const loadRates = async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const data = await fetchExchangeRates()
+      setRates(data.rates)
+      setFetchedAt(data.fetchedAt)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '환율 조회에 실패했습니다')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    loadRates()
+  }, [])
+
+  const meta = getCurrency(selectedCode)
+  const rate = rates[selectedCode] ?? 0
+
+  // 입력 자동 동기화 (마지막 편집된 쪽 기준)
+  useEffect(() => {
+    if (rate <= 0) return
+    if (lastEdited === 'foreign') {
+      setKrwInput(toKrw(foreignInput, rate))
+    } else {
+      setForeignInput(fromKrw(krwInput, rate))
+    }
+  }, [rate, foreignInput, krwInput, lastEdited])
+
+  const handleForeignChange = (v: number) => {
+    setLastEdited('foreign')
+    setForeignInput(v)
+  }
+
+  const handleKrwChange = (v: number) => {
+    setLastEdited('krw')
+    setKrwInput(v)
+  }
+
+  const fmtTime = (unix: number) => {
+    if (!unix) return ''
+    const d = new Date(unix * 1000)
+    const pad = (n: number) => String(n).padStart(2, '0')
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
+  }
+
+  return (
+    <div className="min-h-screen bg-white py-6 sm:py-12 px-4 sm:px-6">
+      <div className="max-w-4xl mx-auto">
+        <button onClick={() => { window.location.href = '/?view=finance' }} className="flex items-center gap-2 text-gray-500 hover:text-gray-900 mb-4 sm:mb-6 transition-colors text-sm">
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+          금융 계산기 목록
+        </button>
+
+        <div className="flex items-center gap-3 mb-4 sm:mb-6 flex-wrap">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">환율 계산기</h1>
+          <ShareButtons url="https://moajim.com/?view=finance&sub=exchange-rate" />
+        </div>
+
+        <PropertyTaxBanner />
+
+        {/* 설명 */}
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-6">
+          <p className="text-gray-700 leading-relaxed">
+            주요 18개국 통화의 실시간 환율을 한국 원화(KRW)로 환산합니다.
+            외화 금액 또는 원화 금액 중 한쪽을 입력하면 반대쪽이 자동으로 계산됩니다.
+          </p>
+          <p className="text-xs text-gray-500 mt-2">
+            마지막 갱신: {fetchedAt ? fmtTime(fetchedAt) : '—'} (KST)
+            <button
+              onClick={loadRates}
+              disabled={loading}
+              className="ml-3 text-[#F15F5F] hover:underline disabled:opacity-40"
+            >
+              {loading ? '갱신 중…' : '↻ 새로고침'}
+            </button>
+          </p>
+        </div>
+
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 flex items-center justify-between">
+            <span className="text-sm text-red-700">{error}</span>
+            <button onClick={loadRates} className="text-sm font-medium text-[#F15F5F] hover:underline">다시 시도</button>
+          </div>
+        )}
+
+        <div className="space-y-6">
+          {/* 통화 선택 */}
+          <div>
+            <label className="block text-sm font-bold text-gray-900 mb-3">통화 선택</label>
+            <div className="flex flex-wrap gap-2">
+              {CURRENCIES.map(c => (
+                <button
+                  key={c.code}
+                  onClick={() => setSelectedCode(c.code)}
+                  className={`px-3 py-2 rounded-full text-sm font-medium transition-colors border ${
+                    selectedCode === c.code
+                      ? 'bg-[#F15F5F] text-white border-[#F15F5F]'
+                      : 'bg-white text-gray-700 border-gray-200 hover:border-[#F15F5F] hover:text-[#F15F5F]'
+                  }`}
+                >
+                  <span className="mr-1.5">{c.flag}</span>
+                  {c.code}
+                </button>
+              ))}
+            </div>
+            {meta && (
+              <p className="text-xs text-gray-500 mt-2">{meta.flag} {meta.name} · {meta.code} · 기호 {meta.symbol}</p>
+            )}
+          </div>
+
+          {/* 외화 입력 */}
+          <div>
+            <label className="block text-sm font-bold text-gray-900 mb-3">
+              {meta ? `${meta.name} (${meta.code})` : '외화'} 금액
+            </label>
+            <div className="relative">
+              <input
+                type="number"
+                value={foreignInput || ''}
+                onChange={(e) => handleForeignChange(Number(e.target.value))}
+                className="w-full px-4 py-4 pr-20 rounded-xl border-2 border-gray-200 focus:border-[#F15F5F] focus:outline-none text-lg"
+                placeholder="외화 금액 입력"
+              />
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">{meta?.code}</span>
+            </div>
+          </div>
+
+          {/* 화살표 */}
+          <div className="flex justify-center">
+            <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
+              <svg className="w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+              </svg>
+            </div>
+          </div>
+
+          {/* 원화 입력 */}
+          <div>
+            <label className="block text-sm font-bold text-gray-900 mb-3">대한민국 원 (KRW) 금액</label>
+            <div className="relative">
+              <input
+                type="number"
+                value={Number.isFinite(krwInput) ? (Math.round(krwInput * 100) / 100) || '' : ''}
+                onChange={(e) => handleKrwChange(Number(e.target.value))}
+                className="w-full px-4 py-4 pr-16 rounded-xl border-2 border-gray-200 focus:border-[#F15F5F] focus:outline-none text-lg"
+                placeholder="원화 금액 입력"
+              />
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">원</span>
+            </div>
+            {krwInput > 10000 && (
+              <p className="text-xs text-[#F15F5F] mt-1">≈ {formatKoreanAmount(krwInput / 10000)}</p>
+            )}
+          </div>
+
+          {/* 결과 카드 */}
+          {meta && rate > 0 && (
+            <div ref={resultRef} className="mt-2 space-y-6">
+              <div className="flex justify-end">
+                <CaptureButtons targetRef={resultRef} fileName={`moajim-환율-${meta.code}-KRW`} />
+              </div>
+
+              <div className="bg-gradient-to-br from-red-50 to-pink-50/30 rounded-2xl p-6 border border-red-100">
+                <div className="text-center mb-4">
+                  <p className="text-sm text-gray-600 mb-1">
+                    {formatForeign(foreignInput, meta)} =
+                  </p>
+                  <p className="text-[28px] sm:text-[40px] font-bold text-[#F15F5F]">
+                    {formatKrw(krwInput)}
+                  </p>
+                </div>
+                <div className="space-y-2 text-sm border-t border-red-200 pt-4">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">현재 환율</span>
+                    <span className="font-medium">1 {meta.code} = {formatRate(rate)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">역환율</span>
+                    <span className="font-medium">1원 = {(1 / rate).toLocaleString('en-US', { maximumFractionDigits: 6 })} {meta.code}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 주요 통화 한눈에 보기 */}
+          <div className="rounded-2xl border border-gray-200 overflow-hidden">
+            <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
+              <h3 className="font-bold text-gray-900">주요 통화 환율 한눈에 보기</h3>
+              <p className="text-xs text-gray-500 mt-0.5">1 [통화] 당 원화 가치</p>
+            </div>
+            <div className="divide-y divide-gray-100">
+              {CURRENCIES.map(c => {
+                const r = rates[c.code]
+                return (
+                  <button
+                    key={c.code}
+                    onClick={() => setSelectedCode(c.code)}
+                    className={`w-full flex items-center justify-between px-6 py-3 text-left transition-colors ${
+                      selectedCode === c.code ? 'bg-red-50' : 'hover:bg-gray-50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">{c.flag}</span>
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">{c.name}</div>
+                        <div className="text-xs text-gray-500">{c.code}</div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className={`text-sm font-bold ${selectedCode === c.code ? 'text-[#F15F5F]' : 'text-gray-900'}`}>
+                        {r ? formatRate(r) : (loading ? '…' : '—')}
+                      </div>
+                      <div className="text-xs text-gray-500">1 {c.code}</div>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* 참고사항 */}
+          <div className="mt-8 bg-blue-50 border border-blue-200 rounded-xl p-6">
+            <h3 className="font-bold text-gray-900 mb-3">참고사항</h3>
+            <ul className="text-sm text-gray-700 leading-relaxed space-y-1">
+              <li>환율 데이터는 open.er-api.com을 통해 제공되며, 약 24시간 주기로 갱신됩니다.</li>
+              <li>본 환율은 시장 평균치로, 실제 은행 매매기준율 및 현찰 매매율과 차이가 있을 수 있습니다.</li>
+              <li>표시 환율은 USD 기준 cross-rate로 환산한 값입니다 (1 [통화] → 원).</li>
+            </ul>
+          </div>
+
+          {/* 주의사항 */}
+          <div className="bg-red-50 border border-red-200 rounded-xl p-6">
+            <h3 className="font-bold text-gray-900 mb-3">⚠️ 주의사항</h3>
+            <ul className="text-sm text-gray-700 leading-relaxed space-y-1">
+              <li>은행 환전 시에는 매매기준율에 환전 스프레드(보통 1~2%)가 더해진 현찰 환율이 적용됩니다.</li>
+              <li>해외 카드 결제·송금에는 별도의 수수료(국제망 수수료, 송금 수수료 등)가 부과될 수 있습니다.</li>
+              <li>본 계산기는 참고용이며, 실거래에는 금융기관에서 고시하는 환율을 확인하시기 바랍니다.</li>
             </ul>
           </div>
         </div>

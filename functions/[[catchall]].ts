@@ -46,8 +46,10 @@ const DEFAULT_SEO: PageSeo = {
       <li><a href="/?view=finance&sub=loan-refinance">대출 대환 계산기</a> - 대환 시 이자 차이를 비교합니다.</li>
       <li><a href="/?view=finance&sub=estimated-income">추정소득 계산기</a> - 인정소득·신고소득 기준 추정 연소득을 계산합니다.</li>
       <li><a href="/?view=finance&sub=auction-loan">경락잔금대출 한도</a> - 경매 낙찰 시 대출 가능 한도를 계산합니다.</li>
-      <li><a href="/?view=finance&sub=jeonse-guarantee">전세보증보험 계산기</a> - 전세보증보험 보증료를 기관별로 비교합니다.</li>
-    </ul>
+        <li><a href="/?view=finance&sub=jeonse-guarantee">전세보증보험 계산기</a> - 전세보증보험 보증료를 기관별로 비교합니다.</li>
+        <li><a href="/?view=finance&sub=exchange-rate">환율 계산기</a> - 주요 18개국 통화의 실시간 환율을 한국 원화로 환산합니다.</li>
+      </ul>
+    </h2>
     <h2>포트폴리오 분석</h2>
     <p><a href="/?view=portfolio">자산 포트폴리오 분석</a> - 현금, 주식, 부동산, 귀금속 등 보유 자산을 입력하고 투자 대가들의 포트폴리오와 비교하여 맞춤 조언을 받아보세요.</p>
   `,
@@ -231,6 +233,7 @@ const PAGES: Record<string, PageSeo> = {
         <li><a href="/?view=finance&sub=estimated-income">추정소득 계산기</a> - 추정 연소득을 계산합니다.</li>
         <li><a href="/?view=finance&sub=auction-loan">경락잔금대출 한도</a> - 경매 낙찰 시 대출 한도를 계산합니다.</li>
         <li><a href="/?view=finance&sub=jeonse-guarantee">전세보증보험 계산기</a> - 전세보증보험 보증료를 비교합니다.</li>
+        <li><a href="/?view=finance&sub=exchange-rate">환율 계산기</a> - 주요 18개국 통화의 실시간 환율을 한국 원화로 환산합니다.</li>
       </ul>
     `,
   },
@@ -322,6 +325,17 @@ const PAGES: Record<string, PageSeo> = {
     content: `
       <h1>전세보증보험 계산기 - 모아짐</h1>
       <p>전세보증보험(전세금반환보증) 가입 시 보증료를 기관별로 비교 계산합니다. HUG(주택도시보증공사), SGI(서울보증보험), HF(한국주택금융공사) 보증 상품의 보증료를 확인하세요.</p>
+    `,
+  },
+  'view=finance&sub=exchange-rate': {
+    title: '실시간 환율 계산기 - 모아짐',
+    description: '미국 달러, 일본 엔, 중국 위안, 유로 등 주요 18개국 통화의 실시간 환율을 한국 원화(KRW)로 변환합니다. 외화 ↔ 원화 양방향 환산.',
+    keywords: '환율 계산기, 실시간 환율, 달러 환율, 엔화 환율, 위안화 환율, 유로 환율, 외화 원화 환산',
+    content: `
+      <h1>실시간 환율 계산기 - 모아짐</h1>
+      <p>미국 달러(USD), 일본 엔(JPY), 중국 위안(CNY), 유로(EUR), 영국 파운드(GBP) 등 주요 18개국 통화의 실시간 환율을 한국 원화(KRW)로 환산합니다. 외화 금액을 입력하면 원화 금액이 자동 계산되며, 반대 방향도 지원합니다.</p>
+      <h2>지원 통화</h2>
+      <p>미국 달러, 일본 엔, 중국 위안, 유로, 영국 파운드, 호주 달러, 캐나다 달러, 스위스 프랑, 홍콩 달러, 싱가포르 달러, 대만 달러, 태국 바트, 베트남 동, 인도네시아 루피아, 필리핀 페소, 말레이시아 링깃, 인도 루피, 뉴질랜드 달러.</p>
     `,
   },
 

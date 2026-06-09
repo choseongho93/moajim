@@ -3,6 +3,7 @@ import { handleCorsOptions, CORS_HEADERS } from './middleware/cors'
 import { handleHealthCheck } from './routes/health'
 import { handleGetInvestors, handleAnalyzePortfolio } from './routes/portfolio'
 import { handleSearchRealEstate } from './routes/realestate'
+import { handleGetExchangeRates } from './routes/exchange'
 import { fetchApartmentTrades } from './services/realestate'
 const router = AutoRouter()
 
@@ -100,6 +101,9 @@ router.post('/api/portfolio/analyze', (request) => handleAnalyzePortfolio(reques
 
 // Real estate search
 router.post('/api/realestate/search', (request, env) => handleSearchRealEstate(request, env))
+
+// Exchange rates (외화 → KRW 환율)
+router.get('/api/exchange/rates', () => handleGetExchangeRates())
 
 // Admin: Get dong count
 router.get('/api/admin/dong-count', async (request, env) => {

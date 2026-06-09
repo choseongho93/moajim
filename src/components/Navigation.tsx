@@ -325,6 +325,15 @@ export default function Navigation({ activeView, activeSubView, onNavigate }: Na
                   >
                     전세보증보험 계산기
                   </button>
+                  <button
+                    onClick={() => handleNavigation('finance', 'exchange-rate')}
+                    className={`w-full text-left px-4 py-3 text-sm transition-colors flex items-center justify-between ${
+                      activeView === 'finance' && activeSubView === 'exchange-rate' ? 'bg-red-50 text-[#F15F5F] font-medium' : 'text-gray-700 hover:bg-red-50 hover:text-[#F15F5F]'
+                    }`}
+                  >
+                    환율 계산기
+                    <span className="text-[10px] bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded-full font-bold">NEW</span>
+                  </button>
                 </div>
               )}
             </div>
@@ -493,6 +502,13 @@ export default function Navigation({ activeView, activeSubView, onNavigate }: Na
                   className="w-full text-left px-4 py-2 text-sm text-gray-600 hover:bg-red-50 hover:text-[#F15F5F] rounded-lg transition-colors"
                 >
                   전세보증보험 계산기
+                </button>
+                <button
+                  onClick={() => handleNavigation('finance', 'exchange-rate')}
+                  className="w-full text-left px-4 py-2 text-sm text-gray-600 hover:bg-red-50 hover:text-[#F15F5F] rounded-lg transition-colors flex items-center justify-between"
+                >
+                  환율 계산기
+                  <span className="text-[10px] bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded-full font-bold">NEW</span>
                 </button>
               </div>
             </div>
