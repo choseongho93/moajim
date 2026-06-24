@@ -6,15 +6,27 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Moajim is a Korean asset portfolio analysis app with real estate price lookup via the 국토교통부 실거래가 government API. Built with React + TypeScript, deployed to Cloudflare Pages (frontend) + Cloudflare Worker (API).
 
+## Repository Structure (monorepo)
+
+```
+moajim/
+  frontend/   React + Vite SPA, Cloudflare Pages Functions (functions/), 그리고
+              레거시 Cloudflare Worker(worker/, wrangler.toml) — Pages 빌드 루트 디렉토리 = frontend
+  backend/    Python FastAPI 단일 백엔드 (worker API를 포팅, 신규). provider-중립 (DATABASE_URL)
+```
+
+> ⚠️ frontend/를 Pages 루트로 옮겼으므로 Cloudflare Pages 프로젝트의 **Build settings → Root directory = `frontend`** 로 설정해야 한다. 레거시 worker는 Python `backend/`로 컷오버 완료 후 frontend/에서 제거.
+
 ## Architecture
 
-### Dual-Build System
-- **Frontend (SPA)**: React app built with Vite → deployed to Cloudflare Pages at `moajim.com`
-- **Backend (API)**: Cloudflare Worker at `worker/index.ts` using itty-router (AutoRouter), serves `/api/*` routes
-- **Database**: Cloudflare D1 (SQLite) binding `DB` → `moajim-db`
+### 멀티-프로덕트 / 진행 중 이전
+- **Frontend (SPA)**: `frontend/` React + Vite → Cloudflare Pages (`moajim.com`)
+- **Backend (API)**: `backend/` Python FastAPI — 기존 Worker(`frontend/worker/index.ts`, itty-router)의 모든 `/api/*` 를 포팅. 외부 호스팅(Fly.io 등) 전제, Cloudflare 프록시 뒤.
+- **Database**: D1(SQLite) → **단일 Postgres**로 이전 중 (`backend/migrations/001_init.sql`)
+- **해외 차단**: Cloudflare WAF 규칙(KR only, 크롤러 예외) + 코드 가드(`functions/[[catchall]].ts`, `backend/.../middleware/geo.py`)
 
 ### Frontend
-- **Routing**: Query-string based SPA routing (no react-router). `App.tsx` reads `?view=` and `?sub=` params, uses `window.history.pushState` for navigation
+- **Routing**: Path 기반 멀티-프로덕트 SPA. 단일 소스 `frontend/src/routes.ts`. `/tax/{section}/{sub}` (예: `/tax/calculator/gift-tax`), `/property`(신규), 향후 `/stock`. `/` 및 레거시 `?view=&sub=` 는 엣지(`functions/[[catchall]].ts`)에서 **301 리다이렉트**로 SEO 보존.
 - **Pages**: HomePage, PortfolioPage, CalculatorPage, ToolsPage, FinancePage, PropertyTaxPage, PrivacyPage
 - **Styling**: Tailwind CSS v4 with PostCSS. Brand color: `#F15F5F`
 - **API calls**: `src/api/` modules use `import.meta.env.DEV ? '/api' : 'https://moajim.com/api'` for URL switching
@@ -84,16 +96,26 @@ Migrations live in `migrations/`. Apply with: `npx wrangler d1 migrations apply 
 
 ## Development Commands
 
+> Node 20+ 필요 (vite/wrangler). nvm 사용 시 `nvm use 20`.
+
+**Frontend** (`cd frontend`):
 ```bash
 npm run dev          # Vite dev server (port 5173), proxies /api to localhost:8787
-npm run dev:worker   # Wrangler dev server (port 8787)
-npm run build        # Build frontend to dist/
-npm run deploy       # Build frontend + deploy Worker to Cloudflare
+npm run dev:worker   # (레거시) Wrangler worker dev (port 8787)
+npm run build        # Build frontend to frontend/dist/
+npm run deploy       # (레거시) Build + deploy Worker
 npm run lint         # ESLint
-npm run cf-typegen   # Generate Cloudflare Worker types
+npx wrangler pages dev dist   # Pages Functions 포함 로컬 프리뷰 (리다이렉트/SSR 검증)
 ```
 
-For local development, run `npm run dev` and `npm run dev:worker` simultaneously. Vite proxies `/api` requests to the Worker dev server.
+**Backend** (`cd backend`):
+```bash
+python3 -m venv .venv && . .venv/bin/activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8000   # FastAPI (자세한 건 backend/README.md)
+```
+
+로컬 풀스택: `frontend`에서 `npm run dev` + `backend`에서 uvicorn. (현재 프론트는 `import.meta.env.DEV ? '/api' : ...`로 worker dev(8787)에 프록시 — Python 컷오버 시 프록시 타깃을 8000으로 변경)
 
 ## Worker API Endpoints
 

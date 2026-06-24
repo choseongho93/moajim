@@ -8,8 +8,15 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
+dist
 dist-ssr
 *.local
+
+# Python (backend/)
+__pycache__/
+*.py[cod]
+.venv/
+venv/
 
 # Editor directories and files
 .vscode/*
@@ -28,3 +35,7 @@ dist-ssr
 !.dev.vars.example
 .env*
 !.env.example
+
+# local tooling artifacts
+.omo/
+.playwright-mcp/
